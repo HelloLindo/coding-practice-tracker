@@ -224,7 +224,7 @@ Confirm that the local workflow works on the new machine before relying on it.
 ## Personal Git synchronization
 
 This public repository distributes the tool and starts with no practice history.
-For personal use, follow the [private-copy setup](../README.md#保存自己的练习记录)
+For personal use, follow the [private-copy setup](../README.md#keep-your-own-practice-records)
 and point `origin` at your own private repository before pushing practice data.
 The app never commits or pushes automatically.
 
