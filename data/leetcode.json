@@ -1,0 +1,10 @@
+[
+  {
+    "id": "1",
+    "slug": "two-sum",
+    "title": "Two Sum",
+    "url": "https://leetcode.com/problems/two-sum/",
+    "statement": "Find two distinct positions in an integer array whose values sum to the target. Return the positions in either order. Each input has exactly one valid pair. Array length is between 2 and 10000 inclusive; array values and the target are between -1000000000 and 1000000000 inclusive. The follow-up asks for a solution faster than quadratic time.",
+    "provenance": "Brief paraphrase checked against the official problem page on 2026-10-29; not a practice record."
+  }
+]

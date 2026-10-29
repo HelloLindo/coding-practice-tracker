@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="practice-token" content="__PRACTICE_TOKEN__">
+  <title>Coding Practice Tracker · Local journal</title>
+  <link rel="stylesheet" href="/style.css">
+  <script src="/app.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="Coding Practice Tracker home"><span class="brand-mark">{ }</span><span>practice<span class="brand-caption">YOUR CODING JOURNAL</span></span></a>
+    <button id="new-practice" class="button primary new-button"><span aria-hidden="true">＋</span> New practice</button>
+    <div class="sidebar-heading"><span>RECENT PROBLEMS</span><span id="problem-count" class="count">0</span></div>
+    <nav id="recent-problems" aria-label="Recent problems"><p class="muted sidebar-empty">Your saved problems will appear here.</p></nav>
+    <div class="sidebar-footer"><span class="status-dot"></span> Local journal<span>Saved in your repository.</span></div>
+  </aside>
+
+  <main>
+    <header class="page-header"><div><div class="eyebrow">A LITTLE PRACTICE, KEPT.</div><h1 id="page-title">Capture your next solution.</h1><p id="page-subtitle">Keep the code. Make the insight your own.</p></div><span class="local-badge"><span class="status-dot"></span> On this Mac</span></header>
+    <div id="notice" class="notice" role="status" aria-live="polite" hidden></div>
+    <div class="workspace">
+      <section class="panel solution-panel" aria-labelledby="solution-title">
+        <div class="panel-heading"><div><span class="step-label">01 / THE PRACTICE</span><h2 id="solution-title">Final solution</h2></div><span class="language-chip">Python</span></div>
+        <form id="archive-form">
+          <div class="field-row">
+            <label>Platform<select id="platform" name="platform"><option value="leetcode">LeetCode</option><option value="hack2hire">Hack2Hire</option></select></label>
+            <label class="grow">Problem number or URL<input id="problem" name="problem" placeholder="0001 or a problem URL" required autocomplete="off"></label>
+          </div>
+          <label class="code-label">Your final AC code<textarea id="code" name="code" class="code-editor" rows="12" placeholder="Paste the solution you understand and submitted." required spellcheck="false" autocapitalize="off" autocomplete="off"></textarea></label>
+          <fieldset class="status-options"><legend>How did you complete it?</legend>
+            <label class="choice-card"><input type="radio" name="status" value="independent" required><span><strong>Independent</strong><small>Reached the target approach on my own.</small></span></label>
+            <label class="choice-card"><input type="radio" name="status" value="improved"><span><strong>Improved</strong><small>Solved it, then learned an optimization.</small></span></label>
+            <label class="choice-card"><input type="radio" name="status" value="learned"><span><strong>Learned</strong><small>Understood a reference, then rewrote it.</small></span></label>
+          </fieldset>
+          <fieldset class="difficulty-options"><legend>Personal difficulty <span class="required-label">Required</span></legend><p class="field-help">How hard was this solution to understand and implement?</p>
+            <div class="rating-row">
+              <label><input type="radio" name="difficulty" value="1" required><span><b>1</b><small>Easy</small></span></label>
+              <label><input type="radio" name="difficulty" value="2"><span><b>2</b><small>Fairly easy</small></span></label>
+              <label><input type="radio" name="difficulty" value="3"><span><b>3</b><small>Moderate</small></span></label>
+              <label><input type="radio" name="difficulty" value="4"><span><b>4</b><small>Hard</small></span></label>
+              <label><input type="radio" name="difficulty" value="5"><span><b>5</b><small>Very hard</small></span></label>
+            </div>
+          </fieldset>
+          <label>Personal notes <span class="optional-label">Optional</span><textarea id="notes" name="notes" rows="3" placeholder="A useful reminder, a tricky detail, or what finally clicked."></textarea></label>
+          <details class="source-details"><summary>Source details, if needed</summary><p class="field-help">If the problem page cannot be read, add its source text. For a new LeetCode URL that cannot be resolved, also fill in its display number and title.</p><div class="field-row"><label>Display number<input id="display-id" name="display_id" inputmode="numeric" placeholder="1"></label><label class="grow">Problem title<input id="manual-title" name="title" placeholder="Two Sum"></label></div><label>Source text<textarea id="statement" name="statement" rows="4" placeholder="Copy the task and constraints from the problem page."></textarea></label></details>
+          <div class="form-footer"><p>Code and notes are saved before recall is generated.</p><button id="archive-button" class="button primary" type="submit">Archive practice <span aria-hidden="true">↗</span></button></div>
+        </form>
+        <div id="saved-practice" hidden><div class="saved-meta"><span id="saved-status" class="pill"></span><span id="saved-difficulty" class="pill neutral"></span><span id="saved-filename" class="mono muted"></span></div><a id="source-link" class="source-link" target="_blank" rel="noopener noreferrer">Open original problem ↗</a><pre id="saved-code" class="saved-code"></pre><details class="saved-notes"><summary>Practice history &amp; original notes</summary><pre id="saved-notes"></pre></details></div>
+      </section>
+
+      <section class="panel recall-panel" aria-labelledby="recall-title">
+        <div class="panel-heading"><div><span class="step-label">02 / THE INSIGHT</span><h2 id="recall-title">Quick recall</h2></div><span id="recall-state" class="pill neutral">Awaiting a practice</span></div>
+        <p class="panel-description">A short reminder in Chinese, then English. Edit it until it sounds like you.</p>
+        <div id="recall-empty" class="empty-recall"><span class="empty-symbol" aria-hidden="true">↳</span><h3>The insight goes here.</h3><p>Archive a solution or select a saved problem.<br>Your bilingual recall will be ready to edit.</p></div>
+        <div id="recall-content" hidden>
+          <div class="editor-toolbar"><div class="segmented" role="group" aria-label="Recall view"><button id="edit-tab" class="active" type="button" aria-pressed="true">Edit</button><button id="preview-tab" type="button" aria-pressed="false">Preview</button></div><button id="generate-button" class="text-button" type="button">Regenerate</button></div>
+          <div id="recall-editors"><label class="recall-language"><span class="language-heading"><strong>中文</strong><span>SIMPLIFIED CHINESE</span></span><textarea id="recall-zh" rows="8" placeholder="用你自己的话记住思路、关键条件和容易遗漏的细节。" spellcheck="false"></textarea></label><label class="recall-language"><span class="language-heading"><strong>English</strong><span>THE SAME IDEAS</span></span><textarea id="recall-en" rows="8" placeholder="Capture the approach, invariant, and details worth remembering."></textarea></label></div>
+          <div id="recall-preview" class="recall-preview" hidden><h3>中文</h3><div id="preview-zh"></div><h3>English</h3><div id="preview-en"></div></div>
+          <details class="source-details"><summary>Source text for regeneration</summary><p class="field-help">If source facts are pending, paste the task and constraints for this problem before regenerating.</p><textarea id="recall-source" rows="4" aria-label="Source text for this problem" placeholder="Optional source text for the selected problem."></textarea></details>
+          <div class="recall-footer"><p id="readme-location" class="mono muted"></p><div class="recall-actions"><button id="reload-recall" class="button secondary" type="button">Reload saved</button><button id="save-recall" class="button primary" type="button" disabled>Save recall</button></div><p class="save-hint">Saves only Quick recall to the problem’s README. <kbd>⌘</kbd> <kbd>S</kbd></p></div>
+        </div>
+      </section>
+    </div>
+    <footer class="page-footer">A record of practice, one understood solution at a time.</footer>
+  </main>
+</body>
+</html>

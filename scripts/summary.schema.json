@@ -1,0 +1,49 @@
+{
+  "type": "object",
+  "properties": {
+    "problem_summary": {
+      "type": "string"
+    },
+    "constraints": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "quick_recall": {
+      "type": "object",
+      "properties": {
+        "zh": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "en": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "zh",
+        "en"
+      ],
+      "additionalProperties": false
+    },
+    "tags": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "problem_summary",
+    "constraints",
+    "quick_recall",
+    "tags"
+  ],
+  "additionalProperties": false
+}
