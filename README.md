@@ -77,7 +77,9 @@ problems/<platform>/<problem>/
 
 公开项目用于分享工具。推荐每个人创建独立的 **私有仓库** 保存自己的代码和笔记。不要直接把个人练习推送到本项目。
 
-最简单的做法：在 GitHub 新建自己的空私有仓库（例如 `my-coding-practice`），下载本项目 ZIP 并解压后，在解压目录执行：
+推荐点击 GitHub 页面右上角 **Use this template → Create a new repository**（[直接创建](https://github.com/new?template_name=coding-practice-tracker&template_owner=HelloLindo)），给副本起名并选择 **Private**，然后 clone 自己的新仓库即可使用。这样工具和个人记录会直接进入你自己的私有空间。
+
+也可以在 GitHub 新建自己的空私有仓库（例如 `my-coding-practice`），下载本项目 ZIP 并解压后，在解压目录执行：
 
 ```bash
 git init -b main
