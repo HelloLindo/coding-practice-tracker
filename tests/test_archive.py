@@ -203,6 +203,22 @@ class ArchiveTests(unittest.TestCase):
         second = archive.resolve_problem(self.root, "hack2hire", "https://www.hack2hire.com/company-b/rate-limiter")
         self.assertNotEqual(first["key"], second["key"])
 
+    def test_hack2hire_question_ids_keep_separate_archives(self):
+        base = "https://www.hack2hire.com/company/fixture/practice"
+        first_url = base + "?questionId=fixture1"
+        second_url = base + "?questionId=fixture2"
+        first = archive.resolve_problem(self.root, "hack2hire", first_url)
+        second = archive.resolve_problem(self.root, "hack2hire", second_url)
+        self.assertNotEqual(first["key"], second["key"])
+        for identity, url in ((first, first_url), (second, second_url)):
+            saved = archive.save_practice(self.root, identity, CODE, "improved", NOTES, "20261115", 3)
+            self.assertEqual(archive.load_problem(self.root, saved.parent)["url"], url)
+            self.assertEqual(saved.name, "20261115.py")
+
+        decorated_url = first_url + "&utm_source=fixture#2"
+        again = archive.resolve_problem(self.root, "hack2hire", decorated_url)
+        self.assertEqual((again["key"], again["url"]), (first["key"], first["url"]))
+
     def test_high_difficulty_independent_practice_is_still_a_review_candidate(self):
         self.save("independent", difficulty=5)
         text = report.report(self.root)

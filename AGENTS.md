@@ -27,10 +27,23 @@ company, a completed exercise, or an adopted curriculum.
   also supports user edits to Quick recall; preserve those edits unless the
   user requests regeneration. Personal notes are appended verbatim. Do not
   silently replace personal notes with an AI paraphrase.
-- The local web entry is web.command. Both web and terminal flows use the same
-  dated solutions and README records; do not create a second progress store.
-  Saving edited recall must change only its marked block, with revision checks
-  against newer edits. Test web writes only in temporary repositories.
+- The local web entry is web.command (web.cmd on Windows). Both web and
+  terminal flows use the same dated solutions and README records; do not create
+  a second progress store. Each problem folder's problem.json holds identity
+  only (platform, title, URL, companies, tags, related problems), never
+  practice history. Saving edited recall or statement must change only its
+  marked block, with revision checks against newer edits. Test web writes only
+  in temporary repositories.
+- Platforms are Provider classes in scripts/providers/. Non-LeetCode
+  statements are pasted by the user as Markdown and stored in the README
+  statement block; do not scrape pages. Keep folder names stable after creation.
+- Tooling must keep working on macOS and Windows with only Python 3.9+ (no
+  packages, no frontend build step, no tz database required).
+- The updater (scripts/update.py) replaces only files listed in
+  tracker-manifest.json and never touches problems/, plans/, STYLE.md, .cache/
+  or .git/. It keeps locally modified tool files and never commits or pushes.
+  After changing any shipped file, run `python3 scripts/release.py` so the
+  manifest matches; release versions are published only with authorization.
 - Base problem facts on recorded source information, not model recollection.
   If source content is unavailable, leave it pending. Keep variants separate.
 - Derive review suggestions from recorded practices, noting uncertainty.
