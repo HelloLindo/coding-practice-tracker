@@ -30,6 +30,46 @@ class ArchiveError(Exception):
     pass
 
 
+SETTINGS_NAME = "settings.json"
+DEFAULT_MODEL = "gpt-6-luna"
+MODEL_RE = re.compile(r"[A-Za-z0-9][A-Za-z0-9._:/-]{0,99}")
+EFFORT_RE = re.compile(r"[a-z]{1,20}")
+
+
+def check_model(value, where="model"):
+    value = str(value or "").strip()
+    if not MODEL_RE.fullmatch(value):
+        raise ArchiveError("Invalid {}: {!r}".format(where, value))
+    return value
+
+
+def check_effort(value, where="reasoning effort"):
+    value = str(value or "").strip().lower()
+    if value and not EFFORT_RE.fullmatch(value):
+        raise ArchiveError("Invalid {}: {!r}".format(where, value))
+    return value or None
+
+
+def ai_settings(root, model=None, effort=None):
+    """Model and reasoning effort for Quick recall generation.
+
+    Precedence: explicit arguments (command-line flags), then the
+    PRACTICE_MODEL / PRACTICE_EFFORT environment variables, then the
+    workspace's optional settings.json, then the defaults. An effort of None
+    leaves the Codex CLI's own default in place.
+    """
+    path = Path(root) / SETTINGS_NAME
+    saved = read_json(path, {})
+    if not isinstance(saved, dict):
+        raise ArchiveError("{} must contain a JSON object.".format(path))
+    unknown = set(saved) - {"model", "reasoning_effort"}
+    if unknown:
+        raise ArchiveError("Unknown {} keys: {}".format(SETTINGS_NAME, ", ".join(sorted(unknown))))
+    model = model or os.environ.get("PRACTICE_MODEL", "").strip() or saved.get("model") or DEFAULT_MODEL
+    effort = effort or os.environ.get("PRACTICE_EFFORT", "").strip() or saved.get("reasoning_effort")
+    return check_model(model), check_effort(effort)
+
+
 def atomic_write(path, text):
     path = Path(path)
     path.parent.mkdir(parents=True, exist_ok=True)

@@ -63,7 +63,13 @@ python3 --version   # 需要 3.11 或更新版本
 python3 scripts/report.py
 ```
 
-默认模型是 `gpt-6-luna`。模型和 CLI 参数兼容性取决于你的安装版本及账号；可用 `--model` 或环境变量 `PRACTICE_MODEL` 指定模型，用 `PRACTICE_CODEX` 指定 CLI 路径。网页端没有单独的关闭 AI 开关；没有 CLI 时请用上述终端流程。
+默认模型是 `gpt-6-luna`，推理强度使用 CLI 的默认值。如需为自己的工作区换模型或推理强度，在根目录创建 `settings.json`（属于你自己的文件，更新永远不会改动它）：
+
+```json
+{"model": "MODEL_ID", "reasoning_effort": "medium"}
+```
+
+`--model` / `--effort` 参数和 `PRACTICE_MODEL` / `PRACTICE_EFFORT` 环境变量可以临时覆盖它。模型是否可用取决于你的安装版本及账号；用 `PRACTICE_CODEX` 指定 CLI 路径。网页端没有单独的关闭 AI 开关；没有 CLI 时请用上述终端流程。
 
 查看 [完整使用指南](docs/USER_GUIDE.md)（英文），了解支持的平台、题目页、无交互归档、摘要重试、冲突处理、升级和所有主要参数。
 
@@ -95,7 +101,7 @@ LeetCode 文件夹形如 `0001-two-sum`，其他平台为 `<标题-slug>-<hash>`
 `web.command` 启动时，每天最多向 GitHub 查询一次本项目是否发布了新版本。有新版本时页面顶部会出现提示，提供 **What's new** 和 **Update now**。更新时：
 
 - 从本项目的 GitHub 仓库下载对应版本，并按清单校验每个文件；
-- 只替换 `tracker-manifest.json` 中列出的工具文件，`problems/`、`plans/`、`STYLE.md`、`.cache/`、`.git/` 永远不会被改动；
+- 只替换 `tracker-manifest.json` 中列出的工具文件，`problems/`、`plans/`、`STYLE.md`、`settings.json`、`.cache/`、`.git/` 永远不会被改动；
 - 你自己改过的工具文件会保留，新版本的对应文件放在 `.cache/update/` 供对比；
 - 不会 commit 或 push。请用 `git status` 检查后自行提交。
 

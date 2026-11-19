@@ -211,8 +211,8 @@ same lock the archiver uses:
 - keeps tool files you changed (for example a personalised README or
   AGENTS.md) and writes the release copy to `.cache/update/<version>/` for
   comparison;
-- never writes `problems/`, `plans/`, `STYLE.md`, `.cache/` (except its own
-  cache) or `.git/`, whatever a manifest lists;
+- never writes `problems/`, `plans/`, `STYLE.md`, `settings.json`, `.cache/`
+  (except its own cache) or `.git/`, whatever a manifest lists;
 - never commits, pushes, or runs Git.
 
 Updating waits while an archive or recall generation is running. After it
@@ -296,10 +296,27 @@ python3 scripts/archive.py --refresh problems/leetcode/0001-two-sum
 
 This uses the latest dated solution and adds no practice. Pass a specific dated
 `.py` file instead to summarize that version. For missing source content, supply
-`--statement-file /path/to/statement.md` (it is also saved to the README). For
-another available model, pass `--model MODEL_ID` or set `PRACTICE_MODEL`; the
-default is `gpt-6-luna`. Availability depends on your CLI account; there is no
-silent model substitution.
+`--statement-file /path/to/statement.md` (it is also saved to the README).
+
+## Model and reasoning effort
+
+Quick recall uses `gpt-6-luna` with the Codex CLI's default reasoning effort
+unless you choose otherwise. To set them for this workspace, create
+`settings.json` in its root:
+
+```json
+{"model": "MODEL_ID", "reasoning_effort": "medium"}
+```
+
+Both keys are optional. `settings.json` belongs to you: updates never change it,
+and committing it keeps the choice on every computer. For a single run,
+`--model` and `--effort` (on `web.command`, `practice.command` or
+`scripts/archive.py`) or the `PRACTICE_MODEL` and `PRACTICE_EFFORT` environment
+variables take precedence over the file. Because generation runs with
+`--ignore-user-config`, the effort is passed to the CLI explicitly as
+`-c model_reasoning_effort="…"`. Availability depends on your CLI account;
+there is no silent model substitution. `web.command` prints the model in use
+when it starts.
 
 Use `--no-ai` to save without a model call. For file-based input, use
 `--code-file`, `--notes-file`, `--status`, and the required `--difficulty 1`

@@ -100,7 +100,7 @@ class PathAndHashTests(unittest.TestCase):
         self.assertNotEqual(update.digest(b"a\n"), update.digest(b"b\n"))
 
     def test_user_owned_and_unsafe_paths_are_rejected(self):
-        for name in ("problems/x.py", "Problems/x.py", "plans/a.md", "STYLE.md", "style.md", ".cache/x",
+        for name in ("problems/x.py", "Problems/x.py", "plans/a.md", "STYLE.md", "style.md", "settings.json", ".cache/x",
                      ".git/config", "../x", "/etc/passwd", "a/../b", "a\\b", "C:x", "./a", "a//b",
                      update.MANIFEST, ""):
             with self.subTest(name=name), self.assertRaises(update.UpdateError):

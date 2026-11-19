@@ -52,6 +52,25 @@ class WebFixture(unittest.TestCase):
             time.sleep(.01)
         self.fail("Background archive did not finish")
 
+class WebSettingsTests(unittest.TestCase):
+    def test_app_reads_workspace_settings(self):
+        with tempfile.TemporaryDirectory(prefix="coding-practice-web-test-") as temp, \
+                patch.dict(web_app.os.environ, {"PRACTICE_MODEL": "", "PRACTICE_EFFORT": ""}):
+            root = Path(temp)
+            (root / "settings.json").write_text('{"model": "gpt-6.2-sol", "reasoning_effort": "medium"}', encoding="utf-8")
+            app = web_app.PracticeApp(root)
+            self.addCleanup(app.close)
+            self.assertEqual((app.model, app.effort), ("gpt-6.2-sol", "medium"))
+            with patch.object(archive, "generate_summary", return_value=SUMMARY) as generate:
+                job = app.submit({"request_id": "settings-request-1", "platform": "leetcode", "problem": "0001",
+                                  "code": CODE, "status": "learned", "difficulty": 3, "notes": ""})
+                deadline = time.monotonic() + 5
+                while app.job(job["id"])["state"] not in ("ready", "partial", "failed", "conflict"):
+                    self.assertLess(time.monotonic(), deadline)
+                    time.sleep(.01)
+            self.assertEqual(generate.call_args.args[4:], ("gpt-6.2-sol", 120, "medium"))
+
+
 class WebTests(WebFixture):
     def test_search_reads_title_notes_and_all_code_files(self):
         self.fixture()

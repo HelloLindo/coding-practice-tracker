@@ -22,7 +22,7 @@ import providers
 import records
 import report
 import update
-from common import ArchiveError, clean_list, require_python, today
+from common import ArchiveError, ai_settings, clean_list, require_python, today
 
 ROOT = archive.ROOT
 WEB = ROOT / "web"
@@ -78,9 +78,9 @@ def list_field(data, key):
 
 
 class PracticeApp:
-    def __init__(self, root=ROOT, model=None, timeout=120, auto_check=False, fetch=update.curl):
+    def __init__(self, root=ROOT, model=None, timeout=120, auto_check=False, fetch=update.curl, effort=None):
         self.root = Path(root).resolve()
-        self.model = model or os.environ.get("PRACTICE_MODEL", "gpt-6-luna")
+        self.model, self.effort = ai_settings(self.root, model, effort)
         self.timeout = timeout
         self.token = secrets.token_urlsafe(32)
         self.boot = secrets.token_hex(8)
@@ -505,7 +505,7 @@ class PracticeApp:
             source = archive.source_for(self.root, problem, statement or None)
             self._set(ident, state="generating", message="Practice saved. Writing Chinese and English recall…")
             summary = archive.generate_summary(problem, source, code.read_text(encoding="utf-8"),
-                                                data.get("notes", ""), self.model, self.timeout)
+                                                data.get("notes", ""), self.model, self.timeout, self.effort)
             with archive.archive_lock(self.root):
                 current = (code.parent / "README.md").read_text(encoding="utf-8")
                 if recall_fields(current)["revision"] != initial_revision:
@@ -680,14 +680,19 @@ def main():
     parser.add_argument("--no-browser", action="store_true")
     parser.add_argument("--no-update-check", action="store_true",
                         help="Do not check GitHub for a newer release (manual checks still work)")
-    parser.add_argument("--model", default=os.environ.get("PRACTICE_MODEL", "gpt-6-luna"))
+    parser.add_argument("--model", help="Codex model (default: settings.json, PRACTICE_MODEL, or gpt-6-luna)")
+    parser.add_argument("--effort", help="Reasoning effort such as low, medium or high (default: settings.json, "
+                                         "PRACTICE_EFFORT, or the Codex CLI default)")
     args = parser.parse_args()
     if not 0 <= args.port <= 65535:
         parser.error("Port must be between 0 and 65535.")
     supervised = os.environ.get("PRACTICE_SUPERVISED") == "1"
     if not supervised and args.port:
         sys.exit(supervise(sys.argv[1:]))
-    app = PracticeApp(model=args.model, auto_check=auto_check_enabled(args.no_update_check))
+    try:
+        app = PracticeApp(model=args.model, effort=args.effort, auto_check=auto_check_enabled(args.no_update_check))
+    except ArchiveError as exc:
+        parser.exit(1, "Could not start the local app: {}\n".format(exc))
     try:
         server = make_server(app, args.port)
     except OSError as exc:
@@ -700,6 +705,7 @@ def main():
         app.restart = restart
     url = "http://127.0.0.1:{}/".format(server.server_port)
     print("Coding Practice Tracker is ready: " + url, flush=True)
+    print("Quick recall model: " + archive.describe_model(app.model, app.effort), flush=True)
     print("Keep this window open. Press Ctrl-C to stop.", flush=True)
     if app.auto_check:
         def background_check():

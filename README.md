@@ -63,7 +63,13 @@ If generation fails, your saved practice remains available. Write recall manuall
 python3 scripts/report.py
 ```
 
-The default model is `gpt-6-luna`. Model availability and CLI argument compatibility depend on your installation and account. Set the model with `--model` or `PRACTICE_MODEL`, and set a custom CLI executable with `PRACTICE_CODEX`. The browser has no separate switch to disable AI generation; use the terminal workflow above when the CLI is unavailable.
+The default model is `gpt-6-luna` with the CLI's default reasoning effort. To choose another model or effort for your workspace, create `settings.json` in its root (your own file; updates never change it):
+
+```json
+{"model": "MODEL_ID", "reasoning_effort": "medium"}
+```
+
+`--model` / `--effort` and the `PRACTICE_MODEL` / `PRACTICE_EFFORT` environment variables override it for one run. Model availability depends on your installation and account. Set a custom CLI executable with `PRACTICE_CODEX`. The browser has no separate switch to disable AI generation; use the terminal workflow above when the CLI is unavailable.
 
 See the [full user guide](docs/USER_GUIDE.md) for supported platforms, the problem page, file-based input, summary retries, conflict handling, upgrades, and the main options.
 
@@ -95,7 +101,7 @@ The browser service listens only on `127.0.0.1` and provides no public hosting o
 When `web.command` starts, it asks GitHub at most once a day whether this project has published a newer release. If one exists, the page shows a banner with **What's new** and **Update now**. Updating:
 
 - downloads the release from this GitHub repository and checks every file against its manifest;
-- replaces only the tool files listed in `tracker-manifest.json`, so `problems/`, `plans/`, `STYLE.md`, `.cache/`, and `.git/` are never touched;
+- replaces only the tool files listed in `tracker-manifest.json`, so `problems/`, `plans/`, `STYLE.md`, `settings.json`, `.cache/`, and `.git/` are never touched;
 - keeps any tool file you edited yourself, and saves the release's version under `.cache/update/` so you can compare them;
 - never commits or pushes. Review the result with `git status` and commit it yourself.
 

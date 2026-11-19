@@ -17,7 +17,8 @@ from urllib.parse import urlparse
 
 import providers
 import records
-from common import ArchiveError, atomic_write, clean_list, file_lock, read_json, require_python, today
+from common import (ArchiveError, ai_settings, atomic_write, clean_list, file_lock, read_json, require_python,
+                    today)
 from records import (block_content, initial_readme, load_problem, marker, practice_files,  # noqa: F401
                      replace_block)
 from providers import manual_identity, plain_text  # noqa: F401  (re-exported for callers)
@@ -236,7 +237,7 @@ def find_codex():
         "Set PRACTICE_CODEX to its executable path, then run --refresh.")
 
 
-def generate_summary(problem, source, code, notes, model, timeout):
+def generate_summary(problem, source, code, notes, model, timeout, effort=None):
     executable = find_codex()
     payload = {"title": problem["title"], "url": problem.get("url", ""),
                "source_statement": source.get("statement", ""),
@@ -260,9 +261,12 @@ def generate_summary(problem, source, code, notes, model, timeout):
         (work / "AGENTS.md").write_text("Only transform the supplied prompt data into JSON. Do not use tools.\n", encoding="utf-8")
         output = work / "summary.json"
         command = [executable, "exec", "--ephemeral", "--ignore-user-config", "--sandbox", "read-only",
-                   "--skip-git-repo-check", "--color", "never", "--model", model,
-                   "--output-schema", str(ROOT / "scripts/summary.schema.json"),
-                   "--output-last-message", str(output), "-"]
+                   "--skip-git-repo-check", "--color", "never", "--model", model]
+        if effort:
+            # --ignore-user-config skips config.toml, so pass the effort explicitly.
+            command += ["-c", 'model_reasoning_effort="{}"'.format(effort)]
+        command += ["--output-schema", str(ROOT / "scripts/summary.schema.json"),
+                    "--output-last-message", str(output), "-"]
         try:
             result = subprocess.run(command, input=prompt, text=True, encoding="utf-8", capture_output=True,
                                     cwd=str(work), timeout=timeout)
@@ -300,8 +304,8 @@ def validate_summary(summary):
     return summary
 
 
-def update_summary(path, problem, source, code, notes, model, timeout):
-    summary = generate_summary(problem, source, code, notes, model, timeout)
+def update_summary(path, problem, source, code, notes, model, timeout, effort=None):
+    summary = generate_summary(problem, source, code, notes, model, timeout, effort)
     apply_summary(path, source, summary)
 
 
@@ -390,6 +394,10 @@ def needs_summary(readme):
     return "AI summary pending." in readme or "Source summary pending." in readme
 
 
+def describe_model(model, effort):
+    return "{} ({} effort)".format(model, effort) if effort else model
+
+
 def update_hint():
     """Mention a newer release found by the web app's daily check (no network here)."""
     try:
@@ -417,11 +425,14 @@ def main(argv=None):
     parser.add_argument("--notes-file", type=Path)
     parser.add_argument("--statement-file", type=Path, help="Problem statement (Markdown) copied from the page")
     parser.add_argument("--date", default=today())
-    parser.add_argument("--model", default=os.environ.get("PRACTICE_MODEL", "gpt-6-luna"))
+    parser.add_argument("--model", help="Codex model (default: settings.json, PRACTICE_MODEL, or gpt-6-luna)")
+    parser.add_argument("--effort", help="Reasoning effort such as low, medium or high (default: settings.json, "
+                                         "PRACTICE_EFFORT, or the Codex CLI default)")
     parser.add_argument("--timeout", type=int, default=120)
     parser.add_argument("--no-ai", action="store_true", help="Save now and generate the summary later")
     parser.add_argument("--refresh", type=Path, help="Generate/retry a README summary without adding a practice")
     args = parser.parse_args(argv)
+    args.model, args.effort = ai_settings(ROOT, args.model, args.effort)
     interactive = sys.stdin.isatty()
     if args.timeout < 1:
         parser.error("--timeout must be positive")
@@ -449,8 +460,9 @@ def main(argv=None):
             if supplied:
                 save_statement(ROOT, problem, supplied)
             source = source_for(ROOT, problem, supplied)
-            print("Generating README with {}...".format(args.model), flush=True)
-            update_summary(target, problem, source, target.read_text(encoding="utf-8"), "", args.model, args.timeout)
+            print("Generating README with {}...".format(describe_model(args.model, args.effort)), flush=True)
+            update_summary(target, problem, source, target.read_text(encoding="utf-8"), "", args.model, args.timeout,
+                           args.effort)
         print("README updated: " + str(folder / "README.md"))
         return 0
     platform = args.platform
@@ -549,8 +561,8 @@ def main(argv=None):
                 if supplied:
                     save_statement(ROOT, problem, supplied)
                     source = source_for(ROOT, problem, supplied)
-            print("Generating README with {}...".format(args.model), flush=True)
-            update_summary(path, problem, source, code, notes, args.model, args.timeout)
+            print("Generating README with {}...".format(describe_model(args.model, args.effort)), flush=True)
+            update_summary(path, problem, source, code, notes, args.model, args.timeout, args.effort)
             if not source.get("statement"):
                 print("Problem facts are still pending; use --refresh with --statement-file later.")
         except (ArchiveError, OSError) as exc:

@@ -1,7 +1,10 @@
 name: Tests
 on:
+  # Pushes that only change practice records or personal files do not run tests.
   push:
+    paths-ignore: ['problems/**', 'plans/**', 'STYLE.md', 'settings.json']
   pull_request:
+    paths-ignore: ['problems/**', 'plans/**', 'STYLE.md', 'settings.json']
 permissions:
   contents: read
 jobs:

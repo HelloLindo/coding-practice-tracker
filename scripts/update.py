@@ -2,7 +2,8 @@
 """Check for and install Coding Practice Tracker updates (standard library only).
 
 Only the tool files listed in tracker-manifest.json are replaced. Practice
-records (problems/), plans/, STYLE.md, .cache/ and .git/ are never touched,
+records (problems/), plans/, STYLE.md, settings.json, .cache/ and .git/ are
+never touched,
 and tool files you changed yourself are kept. Nothing is committed or pushed.
 
   python3 scripts/update.py --check   # report whether a newer release exists
@@ -33,7 +34,7 @@ ROOT = Path(__file__).resolve().parents[1]
 MANIFEST = "tracker-manifest.json"
 DEFAULT_REPOSITORY = "HelloLindo/coding-practice-tracker"
 # User-owned paths. The updater refuses to write below them whatever a manifest says.
-PROTECTED = ("problems", "plans", "style.md", ".cache", ".git")
+PROTECTED = ("problems", "plans", "style.md", "settings.json", ".cache", ".git")
 CHECK_CACHE = ".cache/update-check.json"
 CHECK_INTERVAL = 24 * 3600
 RETRY_INTERVAL = 3600
