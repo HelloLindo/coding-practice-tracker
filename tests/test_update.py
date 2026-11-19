@@ -322,6 +322,13 @@ class WebUpdateTests(Workspace):
 @unittest.skipUnless(shutil.which("git"), "git is required for release manifests")
 class ReleaseTests(unittest.TestCase):
     def setUp(self):
+        # These throwaway repositories act as the upstream tool repository. In a
+        # workspace copy's CI, GITHUB_REPOSITORY names the copy and would make
+        # release.py skip --check, so clear it for every test here.
+        from unittest.mock import patch
+        environment = patch.dict(os.environ, {"GITHUB_REPOSITORY": ""})
+        environment.start()
+        self.addCleanup(environment.stop)
         temp = tempfile.TemporaryDirectory(prefix="coding-practice-release-")
         self.addCleanup(temp.cleanup)
         self.root = Path(temp.name)
@@ -372,6 +379,17 @@ class ReleaseTests(unittest.TestCase):
         (self.root / "scripts/a.py").write_text("a3\n", encoding="utf-8")
         with redirect_stdout(io.StringIO()):
             self.assertEqual(release.main(["--check"], root=self.root), 1)
+
+
+@unittest.skipUnless(shutil.which("git"), "git is required for release manifests")
+class CopyCiTests(unittest.TestCase):
+    def test_release_tests_pass_in_a_workspace_copys_ci(self):
+        # GitHub sets GITHUB_REPOSITORY to the copy's own name; it cannot be
+        # overridden in a workflow, so run the release tests that way here.
+        env = dict(os.environ, GITHUB_REPOSITORY="someone/my-coding-practice")
+        result = subprocess.run([sys.executable, "-m", "unittest", "test_update.ReleaseTests"],
+                                cwd=str(ROOT / "tests"), env=env, capture_output=True, text=True, encoding="utf-8")
+        self.assertEqual(result.returncode, 0, result.stderr[-2000:])
 
 
 @unittest.skipUnless(shutil.which("git") and (ROOT / ".git").exists(), "needs a Git checkout")

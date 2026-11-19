@@ -237,10 +237,11 @@
         "65887cb9c2a0ee58595f7c41b14fa9612ef0ee586a8c640ad33b77e9728cc50f",
         "9653a3636f70b4b19149ab2db40639cb378136ae8ca5ce7fa8eb3a5ab9233d9f",
         "9a531ff69ebe148b31bac2d00e5a906ece0cf52b0143c0e303ae3af9d5b1b8cc",
+        "cb088549eabc3bb745c3d0d9dbf53533227a00165a16a80e293392d538ae917f",
         "d60f4ebc7a8394badb4e508f89096841486b8c8d38cf507c7abef02cf01f61d5",
         "da1794c1c3f0a3f1207051bf75e0bc76cbb9dadc1db0153ec86651486f7df6ae"
       ],
-      "sha256": "cb088549eabc3bb745c3d0d9dbf53533227a00165a16a80e293392d538ae917f"
+      "sha256": "a155c74a335b64f1a27b162d0bd803b6d76c7ba4354d0c05bcd074961232c48e"
     },
     "tests/test_web.py": {
       "executable": false,
@@ -362,5 +363,5 @@
   },
   "repository": "HelloLindo/coding-practice-tracker",
   "requires_python": "3.11",
-  "version": "0.2.1"
+  "version": "0.2.2"
 }
