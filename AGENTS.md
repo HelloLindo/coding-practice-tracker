@@ -39,9 +39,11 @@ company, a completed exercise, or an adopted curriculum.
   statement block; do not scrape pages. Keep folder names stable after creation.
 - Tooling must keep working on macOS and Windows with only Python 3.11+ (no
   packages, no frontend build step, no tz database required).
+- Per-workspace choices (Quick recall model and reasoning effort) live in the
+  optional, user-owned settings.json, never as edits to tool files.
 - The updater (scripts/update.py) replaces only files listed in
-  tracker-manifest.json and never touches problems/, plans/, STYLE.md, .cache/
-  or .git/. It keeps locally modified tool files and never commits or pushes.
+  tracker-manifest.json and never touches problems/, plans/, STYLE.md,
+  settings.json, .cache/ or .git/. It keeps locally modified tool files and never commits or pushes.
   After changing any shipped file, run `python3 scripts/release.py` so the
   manifest matches; release versions are published only with authorization.
 - Base problem facts on recorded source information, not model recollection.

@@ -267,6 +267,40 @@ class ArchiveTests(unittest.TestCase):
             result = archive.generate_summary(self.problem, self.problem, CODE, NOTES, "fake", 1)
         self.assertEqual(result, SUMMARY)
 
+    def test_reasoning_effort_is_passed_explicitly(self):
+        commands = []
+
+        def fake_run(command, **kwargs):
+            commands.append(command)
+            Path(command[command.index("--output-last-message") + 1]).write_text(json.dumps(SUMMARY), encoding="utf-8")
+            return subprocess.CompletedProcess(command, 0, "", "")
+        with patch.object(archive, "find_codex", return_value="codex"), \
+                patch.object(archive.subprocess, "run", side_effect=fake_run):
+            archive.generate_summary(self.problem, self.problem, CODE, NOTES, "gpt-test", 1, "medium")
+            archive.generate_summary(self.problem, self.problem, CODE, NOTES, "gpt-test", 1)
+        with_effort, without = commands
+        self.assertEqual(with_effort[with_effort.index("--model") + 1], "gpt-test")
+        self.assertEqual(with_effort[with_effort.index("-c") + 1], 'model_reasoning_effort="medium"')
+        self.assertIn("--ignore-user-config", with_effort)
+        self.assertNotIn("-c", without)
+
+    def test_settings_precedence_and_validation(self):
+        clean = {"PRACTICE_MODEL": "", "PRACTICE_EFFORT": ""}
+        with patch.dict(os.environ, clean):
+            self.assertEqual(archive.ai_settings(self.root), ("gpt-6-luna", None))
+            (self.root / "settings.json").write_text(json.dumps({"model": "gpt-6.2-sol", "reasoning_effort": "Medium"}),
+                                                     encoding="utf-8")
+            self.assertEqual(archive.ai_settings(self.root), ("gpt-6.2-sol", "medium"))
+            self.assertEqual(archive.ai_settings(self.root, "flag-model", "high"), ("flag-model", "high"))
+        with patch.dict(os.environ, {"PRACTICE_MODEL": "env-model", "PRACTICE_EFFORT": "low"}):
+            self.assertEqual(archive.ai_settings(self.root), ("env-model", "low"))
+        with patch.dict(os.environ, clean):
+            for bad in ({"model": "bad model"}, {"reasoning_effort": "very high"}, {"modle": "typo"}, ["model"]):
+                with self.subTest(bad=bad):
+                    (self.root / "settings.json").write_text(json.dumps(bad), encoding="utf-8")
+                    with self.assertRaises(archive.ArchiveError):
+                        archive.ai_settings(self.root)
+
     def test_cli_on_path_takes_precedence_over_app_bundle(self):
         with patch.dict(os.environ, {"PRACTICE_CODEX": ""}), \
                 patch.object(archive.shutil, "which", return_value="/custom/bin/codex"), \

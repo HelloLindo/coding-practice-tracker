@@ -18,8 +18,9 @@ git diff --check
 ```
 
 If you change a shipped file, run `python3 scripts/release.py` so the update
-manifest matches. The updater must never write `problems/`, `plans/`,
-`STYLE.md`, `.cache/` or `.git/`, and must keep tool files users changed.
+manifest matches. The `--check` runs only in this repository; in a user's
+workspace copy the manifest describes the installed release and is skipped. The updater must never write `problems/`, `plans/`,
+`STYLE.md`, `settings.json`, `.cache/` or `.git/`, and must keep tool files users changed.
 
 Add focused regression coverage for behavior changes. All test archives belong
 in temporary directories, never the shipped `problems/` directory. CI uses
