@@ -8,9 +8,10 @@
     ".github/workflows/tests.yml": {
       "executable": false,
       "previous": [
+        "95833daf85d80ee8fb23d71e23664f64cd742cc9c6682752d3d27b2e1a4ae8bf",
         "b69682f1d194bc2548ef3c2290f5d614f82bf76e413f7657c911e5b0bbcf0bc7"
       ],
-      "sha256": "95833daf85d80ee8fb23d71e23664f64cd742cc9c6682752d3d27b2e1a4ae8bf"
+      "sha256": "d34aaa3a8aa195e58bfaa267aa31c37c5a54b780e973111105dde85e59328986"
     },
     ".gitignore": {
       "executable": false,
