@@ -1,6 +1,6 @@
 """Shared helpers for the coding practice tools (standard library only).
 
-Everything here works on macOS, Linux and Windows with a plain Python 3.9+
+Everything here works on macOS, Linux and Windows with a plain Python 3.11+
 installation: no third-party packages and no tzdata download are required.
 """
 
@@ -11,8 +11,19 @@ import json
 import os
 from pathlib import Path
 import re
+import sys
 import tempfile
 import unicodedata
+
+MIN_PYTHON = (3, 11)
+
+
+def require_python():
+    """Stop with a clear message on an unsupported interpreter."""
+    if sys.version_info[:2] < MIN_PYTHON:
+        raise SystemExit("Coding Practice Tracker needs Python {}.{} or newer; this is Python {}.{}. "
+                         "Install a current Python from https://www.python.org/downloads/ and run it again."
+                         .format(*MIN_PYTHON, *sys.version_info[:2]))
 
 
 class ArchiveError(Exception):

@@ -95,6 +95,9 @@ def validate_manifest(data):
         if not isinstance(entry, dict) or not HASH_RE.fullmatch(str(entry.get("sha256", ""))):
             raise UpdateError("Invalid manifest entry: {}".format(name))
         _hashes(entry.get("previous", []), name)
+    requires = data.get("requires_python", "3.0")
+    if not isinstance(requires, str) or not re.fullmatch(r"3\.\d{1,2}", requires):
+        raise UpdateError("Invalid requires_python in the manifest: {!r}".format(requires))
     removed = data.get("removed", {})
     if not isinstance(removed, dict):
         raise UpdateError("Invalid removed list in the manifest.")
@@ -417,6 +420,16 @@ def install(root, new, raw, files):
     return result
 
 
+def check_python(manifest, running=None):
+    """Refuse a release that the interpreter running the tool cannot start."""
+    running = tuple((running or sys.version_info)[:2])
+    needed = tuple(int(part) for part in manifest.get("requires_python", "3.0").split("."))
+    if running < needed:
+        raise UpdateError("Version {} needs Python {}.{} or newer, but this is Python {}.{}. Install a current "
+                          "Python from https://www.python.org/downloads/, then run the update with it."
+                          .format(manifest["version"], needed[0], needed[1], running[0], running[1]))
+
+
 def prepare(root, release=None, fetch=curl):
     """Download the latest (or given) release and plan it without writing."""
     repository = repository_of(root)
@@ -424,6 +437,7 @@ def prepare(root, release=None, fetch=curl):
     new, raw, files = read_release(download(repository, release["tag"], fetch))
     if version_text(parse_version(new["version"])) != release["version"]:
         raise UpdateError("Release {} contains manifest version {}.".format(release["tag"], new["version"]))
+    check_python(new)
     actions = plan(root, new, local_manifest(root))
     return {"release": release, "manifest": new, "raw": raw, "files": files,
             "actions": actions, "summary": summarize(actions)}

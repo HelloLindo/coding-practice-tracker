@@ -108,4 +108,6 @@ def report(root):
 
 
 if __name__ == "__main__":
+    from common import require_python
+    require_python()
     print(report(ROOT), end="")

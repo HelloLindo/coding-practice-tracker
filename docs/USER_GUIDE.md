@@ -14,7 +14,7 @@ Finder). On Windows, double-click `web.cmd`. It starts a local service and
 opens `http://127.0.0.1:8765/` in your browser. Keep that window open while
 using the page; Ctrl-C stops the service after active archives finish.
 
-Nothing needs to be installed besides Python 3.9+: no packages, no frontend
+Nothing needs to be installed besides Python 3.11+: no packages, no frontend
 build, no database. The page is plain HTML, CSS and JavaScript modules served
 from `web/`. Use `--port 8766` if the default port is occupied and
 `--no-browser` to start without opening another tab.
@@ -105,7 +105,7 @@ are collected. A new site needs only a small `Provider` class in
 
 ## Start a practice archive in Terminal
 
-Requirements: Python 3.9+, curl (built into macOS and Windows 10+), and a
+Requirements: Python 3.11+, curl (built into macOS and Windows 10+), and a
 logged-in Codex CLI. The archiver looks for `codex` on PATH, then for the CLI
 bundled inside ChatGPT.app in `/Applications` or `~/Applications`. For another
 installation, set `PRACTICE_CODEX` to its executable path (this explicit

@@ -1,5 +1,5 @@
 @echo off
-rem Windows launcher for the terminal archive flow. Requires Python 3.9+.
+rem Windows launcher for the terminal archive flow. Requires Python 3.11+.
 setlocal
 cd /d "%~dp0"
 rem The block is parsed at once, so an update that replaces this file cannot

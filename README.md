@@ -6,6 +6,8 @@ A local Python coding practice journal: save the final solution you understand a
 
 Use the browser workspace or terminal workflow with the Python standard library. No Python dependencies, frontend build, or database setup is needed. This public repository starts with **0 problems and 0 practices**, with no personal solution history included.
 
+![A problem page with the statement, practice history, highlighted code, and bilingual Quick recall](docs/images/problem.png)
+
 ## Features
 
 - **Archive from many platforms**: LeetCode (`leetcode.com` and `leetcode.cn`), Hack2Hire, LintCode, NeetCode, HackerRank, CodeSignal, GeeksforGeeks, 1Point3Acres, any other website, or a question with no link at all. Archived solutions currently use Python.
@@ -15,18 +17,28 @@ Use the browser workspace or terminal workflow with the Python standard library.
 - **Browse and review**: every problem has its own page with practice history and highlighted code; the sidebar searches and filters by platform, status, difficulty, company, and tag; the Review page shows a practice calendar and review candidates.
 - **Stay up to date**: the app tells you when a new release is available and installs it with one click, without touching your records.
 
+## Screenshots
+
+| New practice (dark theme) | Review |
+| --- | --- |
+| ![The new practice form in the dark theme](docs/images/new-dark.png) | ![The Review page with totals, a practice calendar, and review candidates](docs/images/review.png) |
+
+![A problem page in the dark theme, rendering a Markdown table and math in the statement](docs/images/problem-dark.png)
+
+The screenshots use made-up demo practices.
+
 ## Quick start
 
-Requirements: **Python 3.9+ and curl** on macOS or Windows 10+ (both ship curl). AI generation requires a separately installed, logged-in Codex CLI; no API key belongs in this project. The browser workflow attempts AI generation after saving. To archive without AI, use the terminal's `--no-ai` option.
+Requirements: **Python 3.11+ and curl** on macOS or Windows 10+ (both ship curl). AI generation requires a separately installed, logged-in Codex CLI; no API key belongs in this project. The browser workflow attempts AI generation after saving. To archive without AI, use the terminal's `--no-ai` option.
 
 ```bash
 git clone https://github.com/HelloLindo/coding-practice-tracker.git
 cd coding-practice-tracker
-python3 --version
+python3 --version   # 3.11 or newer
 ./web.command
 ```
 
-On Windows, double-click `web.cmd` instead. Your browser opens `http://127.0.0.1:8765/`. On macOS you can also double-click `web.command` in Finder. Keep the window open while using the app; press Ctrl-C to stop it.
+If `python3 --version` reports an older Python (the copy bundled with Apple's Command Line Tools can be), install a current one from [python.org](https://www.python.org/downloads/). On Windows, double-click `web.cmd` instead. Your browser opens `http://127.0.0.1:8765/`. On macOS you can also double-click `web.command` in Finder. Keep the window open while using the app; press Ctrl-C to stop it.
 
 1. Solve a problem on the practice platform, obtain Accepted, and make sure you understand the solution.
 2. Paste the problem link (or a LeetCode number). The platform is detected from the link, and the page says whether the problem is new or already archived.
@@ -127,7 +139,7 @@ Before pushing, confirm that `origin` points to your own private repository and 
 
 ## Scope and limitations
 
-- Works on macOS and Windows with only Python 3.9+; Linux is tested in CI. Validate other systems for your own workflow.
+- Works on macOS and Windows with only Python 3.11+; Linux is tested in CI. Validate other systems for your own workflow.
 - LeetCode interfaces may change or reject requests. Supply an exact URL, title, and pasted statement when needed. Missing source content stays pending rather than receiving invented constraints.
 - Review AI output yourself. There is no built-in judge, solution collection, or multi-user synchronization service.
 - Keep credentials, restricted problem statements, employer code, and other people's private materials out of commits.

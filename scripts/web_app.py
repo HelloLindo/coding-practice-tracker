@@ -22,7 +22,7 @@ import providers
 import records
 import report
 import update
-from common import ArchiveError, clean_list, today
+from common import ArchiveError, clean_list, require_python, today
 
 ROOT = archive.ROOT
 WEB = ROOT / "web"
@@ -721,4 +721,5 @@ def main():
 
 
 if __name__ == "__main__":
+    require_python()
     main()

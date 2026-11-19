@@ -113,6 +113,30 @@ class PathAndHashTests(unittest.TestCase):
             update.parse_version("latest")
 
 
+class PythonVersionTests(unittest.TestCase):
+    def test_release_requiring_newer_python_is_refused(self):
+        data = manifest("2.0.0", {"scripts/a.py": b"a\n"})
+        data["requires_python"] = "3.11"
+        update.check_python(update.validate_manifest(data), (3, 11))
+        with self.assertRaisesRegex(update.UpdateError, "needs Python 3.11 or newer, but this is Python 3.9"):
+            update.check_python(data, (3, 9))
+        data["requires_python"] = "three"
+        with self.assertRaises(update.UpdateError):
+            update.validate_manifest(data)
+
+    def test_tools_stop_on_old_python(self):
+        import common
+        from unittest.mock import patch
+        with patch.object(common.sys, "version_info", (3, 9, 6, "final", 0)):
+            with self.assertRaisesRegex(SystemExit, "needs Python 3.11 or newer; this is Python 3.9"):
+                common.require_python()
+        common.require_python()
+
+    def test_shipped_requirement_matches_the_tools(self):
+        import common
+        self.assertEqual(release.REQUIRES_PYTHON, "{}.{}".format(*common.MIN_PYTHON))
+
+
 class InstallTests(Workspace):
     def install(self, fetch):
         prepared = update.prepare(self.root, fetch=fetch)

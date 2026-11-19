@@ -23,7 +23,7 @@ import sys
 import providers
 import records
 from archive import ROOT, archive_lock, cache_path
-from common import ArchiveError, atomic_write, clean_list, read_json
+from common import ArchiveError, atomic_write, clean_list, read_json, require_python
 
 USER_SUPPLIED = "Source text supplied by the user."
 
@@ -153,6 +153,7 @@ def main(argv=None, root=None):
 
 
 if __name__ == "__main__":
+    require_python()
     try:
         sys.exit(main())
     except (ArchiveError, OSError, ValueError) as exc:

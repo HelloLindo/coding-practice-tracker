@@ -20,6 +20,7 @@ import sys
 from update import MANIFEST, DEFAULT_REPOSITORY, UpdateError, digest, parse_version, safe_path, version_text
 
 ROOT = Path(__file__).resolve().parents[1]
+REQUIRES_PYTHON = "3.11"  # Keep in step with common.MIN_PYTHON.
 
 
 def git(root, *args, binary=False):
@@ -80,7 +81,7 @@ def build(root, old, version=None, previous_ref=None):
                     files[name]["previous"] = sorted(set(files[name]["previous"]) | {old_hash})
             else:
                 removed[name] = sorted(set(removed.get(name, [])) | {old_hash})
-    return {"name": "coding-practice-tracker", "version": version,
+    return {"name": "coding-practice-tracker", "version": version, "requires_python": REQUIRES_PYTHON,
             "repository": old.get("repository", DEFAULT_REPOSITORY),
             "files": files, "removed": dict(sorted(removed.items()))}
 

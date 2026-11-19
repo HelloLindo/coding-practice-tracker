@@ -6,6 +6,8 @@
 
 开箱即用的本地网页 + 终端流程，使用 Python 标准库，无需安装 Python 依赖、构建前端或配置数据库。公开仓库从 **0 道题、0 次练习** 开始，不包含作者的个人解题记录。
 
+![题目页：题目原文、练习历史、高亮代码与中英双语 Quick recall](docs/images/problem.png)
+
 ## 能做什么
 
 - **多平台归档**：LeetCode（`leetcode.com` 与 `leetcode.cn`）、Hack2Hire、LintCode、NeetCode、HackerRank、CodeSignal、GeeksforGeeks、一亩三分地、任意其他网站，或完全没有链接的题目。目前归档语言为 Python。
@@ -15,18 +17,28 @@
 - **浏览与复习**：每道题都有独立页面，展示练习历史和高亮代码；侧边栏可按平台、状态、难度、公司、标签搜索筛选；Review 页提供练习日历和复习候选。
 - **保持最新**：有新版本时页面会提示，一键更新且不会改动你的记录。
 
+## 界面截图
+
+| 新建练习（深色主题） | Review 复习页 |
+| --- | --- |
+| ![深色主题下的新建练习表单](docs/images/new-dark.png) | ![Review 页：统计、练习日历与复习候选](docs/images/review.png) |
+
+![深色主题的题目页，题目原文中渲染了 Markdown 表格和数学公式](docs/images/problem-dark.png)
+
+截图中的练习均为演示用的虚构数据。
+
 ## 快速开始
 
-需要 **Python 3.9+ 和 curl**，支持 macOS 与 Windows 10+（两者都自带 curl）。AI 生成需要单独安装并登录 Codex CLI；不需要在项目中填写 API key。网页会在保存后尝试 AI 生成；不使用 AI 时可通过终端的 `--no-ai` 归档。
+需要 **Python 3.11+ 和 curl**，支持 macOS 与 Windows 10+（两者都自带 curl）。AI 生成需要单独安装并登录 Codex CLI；不需要在项目中填写 API key。网页会在保存后尝试 AI 生成；不使用 AI 时可通过终端的 `--no-ai` 归档。
 
 ```bash
 git clone https://github.com/HelloLindo/coding-practice-tracker.git
 cd coding-practice-tracker
-python3 --version
+python3 --version   # 需要 3.11 或更新版本
 ./web.command
 ```
 
-Windows 上改为双击 `web.cmd`。浏览器将打开 `http://127.0.0.1:8765/`；macOS 也可以在 Finder 双击 `web.command`。使用过程中保持窗口打开，按 Ctrl-C 退出。
+如果 `python3 --version` 显示的版本较旧（Apple Command Line Tools 自带的 Python 可能如此），请从 [python.org](https://www.python.org/downloads/) 安装新版。Windows 上改为双击 `web.cmd`。浏览器将打开 `http://127.0.0.1:8765/`；macOS 也可以在 Finder 双击 `web.command`。使用过程中保持窗口打开，按 Ctrl-C 退出。
 
 1. 在练习平台完成题目，确认 Accepted 且理解解法。
 2. 粘贴题目链接（或 LeetCode 题号）。平台会从链接自动识别，页面会提示这是新题还是已归档的题。
@@ -127,7 +139,7 @@ git push -u origin main
 
 ## 适用范围与限制
 
-- 在 macOS 和 Windows 上只需 Python 3.9+；CI 同时在 Linux 上测试。其他系统需自行验证。
+- 在 macOS 和 Windows 上只需 Python 3.11+；CI 同时在 Linux 上测试。其他系统需自行验证。
 - LeetCode 接口可能变化或拒绝访问。可粘贴准确 URL、标题及题目原文；来源缺失时不编造题目约束。
 - AI 输出应自行复核。没有内置自动判题、题库答案集或多人同步服务。
 - 不要提交账号凭据、受限制的题目原文、雇主代码或他人的私有材料。

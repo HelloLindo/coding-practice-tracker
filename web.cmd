@@ -1,5 +1,5 @@
 @echo off
-rem Windows launcher for the browser workspace. Requires Python 3.9+ (python.org or Microsoft Store).
+rem Windows launcher for the browser workspace. Requires Python 3.11+ (python.org or Microsoft Store).
 setlocal
 cd /d "%~dp0"
 rem The block is parsed at once, so an update that replaces this file cannot

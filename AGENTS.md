@@ -37,7 +37,7 @@ company, a completed exercise, or an adopted curriculum.
 - Platforms are Provider classes in scripts/providers/. Non-LeetCode
   statements are pasted by the user as Markdown and stored in the README
   statement block; do not scrape pages. Keep folder names stable after creation.
-- Tooling must keep working on macOS and Windows with only Python 3.9+ (no
+- Tooling must keep working on macOS and Windows with only Python 3.11+ (no
   packages, no frontend build step, no tz database required).
 - The updater (scripts/update.py) replaces only files listed in
   tracker-manifest.json and never touches problems/, plans/, STYLE.md, .cache/

@@ -17,7 +17,7 @@ from urllib.parse import urlparse
 
 import providers
 import records
-from common import ArchiveError, atomic_write, clean_list, file_lock, read_json, today
+from common import ArchiveError, atomic_write, clean_list, file_lock, read_json, require_python, today
 from records import (block_content, initial_readme, load_problem, marker, practice_files,  # noqa: F401
                      replace_block)
 from providers import manual_identity, plain_text  # noqa: F401  (re-exported for callers)
@@ -563,6 +563,7 @@ def main(argv=None):
 
 
 if __name__ == "__main__":
+    require_python()
     try:
         sys.exit(main())
     except (ArchiveError, OSError, ValueError) as exc:
