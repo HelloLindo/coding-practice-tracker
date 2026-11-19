@@ -28,6 +28,47 @@ def practices(root):
     return rows
 
 
+def review_candidates(rows):
+    """Latest difficulty 4–5, or latest status improved/learned; hardest, then oldest first."""
+    candidates = [(entries[-1], folder) for folder, entries in rows
+                  if entries[-1][2] != "independent" or (entries[-1][4] or 0) >= 4]
+    candidates.sort(key=lambda item: (-(item[0][4] or 0), item[0][0], item[0][1], item[1].name))
+    return candidates
+
+
+def easiest_candidates(rows):
+    easiest = [(entries[-1], folder) for folder, entries in rows
+               if entries[-1][2] == "independent" and entries[-1][4] in (1, 2)]
+    easiest.sort(key=lambda item: (item[0][4], item[0][0], item[1].name))
+    return easiest
+
+
+def data(root):
+    """Structured progress for the browser review page."""
+    rows = practices(root)
+    base = root / "problems"
+
+    def item(entry, folder, count=None):
+        date, _, status, _, difficulty = entry
+        result = {"key": folder.relative_to(base).as_posix(), "date": date, "status": status,
+                  "difficulty": difficulty}
+        if count is not None:
+            result["count"] = count
+        return result
+
+    counts = {folder: len(entries) for folder, entries in rows}
+    return {
+        "problems": len(rows),
+        "practices": sum(counts.values()),
+        "latest_status": dict(Counter(entries[-1][2] for _, entries in rows)),
+        "latest_difficulty": dict(Counter(str(entries[-1][4] or "unrated") for _, entries in rows)),
+        "platforms": dict(Counter(folder.parent.name for folder, _ in rows)),
+        "calendar": dict(Counter(entry[0] for _, entries in rows for entry in entries)),
+        "review": [item(e, f, counts[f]) for e, f in review_candidates(rows)],
+        "easiest": [item(e, f, counts[f]) for e, f in easiest_candidates(rows)],
+    }
+
+
 def difficulty_label(value):
     return "{}/5".format(value) if value is not None else "unrated (legacy)"
 
@@ -48,17 +89,13 @@ def report(root):
                  latest["independent"], latest["improved"], latest["learned"]), "",
              "## Review candidates", "",
              "Latest difficulty 4–5, or latest status improved/learned. Higher difficulty first; ties oldest practice.", ""]
-    candidates = [(entries[-1], folder) for folder, entries in rows
-                  if entries[-1][2] != "independent" or (entries[-1][4] or 0) >= 4]
-    candidates.sort(key=lambda item: (-(item[0][4] or 0), item[0][0], item[0][1], item[1].name))
+    candidates = review_candidates(rows)
     lines += [problem_line(root, folder, entry) for entry, folder in candidates]
     if not candidates:
         lines.append("No review candidates recorded yet. This does not establish mastery.")
     lines += ["", "## Personally easiest candidates", "",
               "Latest status independent and difficulty 1–2; lower difficulty first.", ""]
-    easiest = [(entries[-1], folder) for folder, entries in rows
-               if entries[-1][2] == "independent" and entries[-1][4] in (1, 2)]
-    easiest.sort(key=lambda item: (item[0][4], item[0][0], item[1].name))
+    easiest = easiest_candidates(rows)
     lines += [problem_line(root, folder, entry) for entry, folder in easiest]
     if not easiest:
         lines.append("No personally easiest candidates recorded yet.")
@@ -71,4 +108,6 @@ def report(root):
 
 
 if __name__ == "__main__":
+    from common import require_python
+    require_python()
     print(report(ROOT), end="")

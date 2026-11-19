@@ -50,8 +50,8 @@ class ArchiveTests(unittest.TestCase):
         second = self.save("improved", notes="A second original note.")
         self.assertEqual(first.name, "20261029.py")
         self.assertEqual(second.name, "20261029_02.py")
-        self.assertEqual(first.read_text(), "# Practice: learned\n# Difficulty: 3\n" + CODE)
-        text = (first.parent / "README.md").read_text()
+        self.assertEqual(first.read_text(encoding="utf-8"), "# Practice: learned\n# Difficulty: 3\n" + CODE)
+        text = (first.parent / "README.md").read_text(encoding="utf-8")
         self.assertIn(NOTES, text)
         self.assertIn("A second original note.", text)
         self.assertIn("20261029_02.py", text)
@@ -60,13 +60,13 @@ class ArchiveTests(unittest.TestCase):
         notes = "Keep these blank lines.\n\n\n\n"
         first = self.save(notes=notes)
         self.save(notes="Next practice.")
-        self.assertIn(notes, (first.parent / "README.md").read_text())
+        self.assertIn(notes, (first.parent / "README.md").read_text(encoding="utf-8"))
 
     def test_refresh_selects_numeric_same_day_sequence(self):
         folder = self.root / "fixtures"
         folder.mkdir()
         for name in ("20261029.py", "20261029_99.py", "20261029_100.py", "helper.py"):
-            (folder / name).write_text(CODE)
+            (folder / name).write_text(CODE, encoding="utf-8")
         self.assertEqual(archive.practice_files(folder)[-1].name, "20261029_100.py")
 
     def test_manual_identity_fallback_requires_platform_url(self):
@@ -78,11 +78,11 @@ class ArchiveTests(unittest.TestCase):
     def test_summary_updates_only_generated_sections(self):
         code = self.save()
         readme = code.parent / "README.md"
-        with readme.open("a") as stream:
+        with readme.open("a", encoding="utf-8") as stream:
             stream.write("\nMy manually written extra section.\n")
         with patch.object(archive, "generate_summary", return_value=SUMMARY):
             archive.update_summary(code, self.problem, self.problem, CODE, NOTES, "fake", 1)
-        text = readme.read_text()
+        text = readme.read_text(encoding="utf-8")
         self.assertIn(NOTES, text)
         self.assertIn("My manually written extra section.", text)
         self.assertIn("Synthetic fixture", text)
@@ -93,7 +93,7 @@ class ArchiveTests(unittest.TestCase):
         code = self.save()
         with patch.object(archive, "generate_summary", return_value=SUMMARY):
             archive.update_summary(code, self.problem, self.problem, CODE, NOTES, "fake", 1)
-        text = (code.parent / "README.md").read_text()
+        text = (code.parent / "README.md").read_text(encoding="utf-8")
         self.assertLess(text.index("### 中文"), text.index("### English"))
         self.assertIn(SUMMARY["quick_recall"]["zh"][0], text)
         self.assertIn(SUMMARY["quick_recall"]["en"][0], text)
@@ -110,7 +110,7 @@ class ArchiveTests(unittest.TestCase):
         code = self.save()
         with patch.object(archive, "generate_summary", return_value=SUMMARY):
             archive.update_summary(code, self.problem, {}, CODE, "", "fake", 1)
-        text = (code.parent / "README.md").read_text()
+        text = (code.parent / "README.md").read_text(encoding="utf-8")
         self.assertIn("Source summary pending.", text)
         self.assertNotIn(SUMMARY["problem_summary"], text)
 
@@ -122,8 +122,8 @@ class ArchiveTests(unittest.TestCase):
 
     def test_difficulty_is_saved_in_code_header_and_dated_readme_entry(self):
         code = self.save(difficulty=5)
-        self.assertTrue(code.read_text().startswith("# Practice: independent\n# Difficulty: 5\n"))
-        self.assertIn("Personal difficulty: 5/5", (code.parent / "README.md").read_text())
+        self.assertTrue(code.read_text(encoding="utf-8").startswith("# Practice: independent\n# Difficulty: 5\n"))
+        self.assertIn("Personal difficulty: 5/5", (code.parent / "README.md").read_text(encoding="utf-8"))
 
     def test_missing_noninteractive_difficulty_fails_without_archiving(self):
         with patch.object(archive, "ROOT", self.root), patch.object(archive.sys.stdin, "isatty", return_value=False), \
@@ -148,7 +148,7 @@ class ArchiveTests(unittest.TestCase):
             self.assertEqual(self.cli("--no-ai"), 0)
         model.assert_not_called()
         source.assert_not_called()
-        self.assertIn(NOTES, next((self.root / "problems").glob("*/*/README.md")).read_text())
+        self.assertIn(NOTES, next((self.root / "problems").glob("*/*/README.md")).read_text(encoding="utf-8"))
 
     def test_model_failure_preserves_practice_and_refresh_does_not_add_one(self):
         with patch.object(archive, "source_for", return_value=self.problem), \
@@ -160,7 +160,7 @@ class ArchiveTests(unittest.TestCase):
                 patch.object(archive, "generate_summary", return_value=SUMMARY), redirect_stdout(io.StringIO()):
             self.assertEqual(archive.main(["--refresh", str(folder)]), 0)
         self.assertEqual(len(list(folder.glob("*.py"))), 1)
-        self.assertIn(NOTES, (folder / "README.md").read_text())
+        self.assertIn(NOTES, (folder / "README.md").read_text(encoding="utf-8"))
 
     def test_repeat_practice_with_complete_readme_skips_all_network_and_model_calls(self):
         code = self.save()
@@ -203,6 +203,22 @@ class ArchiveTests(unittest.TestCase):
         second = archive.resolve_problem(self.root, "hack2hire", "https://www.hack2hire.com/company-b/rate-limiter")
         self.assertNotEqual(first["key"], second["key"])
 
+    def test_hack2hire_question_ids_keep_separate_archives(self):
+        base = "https://www.hack2hire.com/company/fixture/practice"
+        first_url = base + "?questionId=fixture1"
+        second_url = base + "?questionId=fixture2"
+        first = archive.resolve_problem(self.root, "hack2hire", first_url)
+        second = archive.resolve_problem(self.root, "hack2hire", second_url)
+        self.assertNotEqual(first["key"], second["key"])
+        for identity, url in ((first, first_url), (second, second_url)):
+            saved = archive.save_practice(self.root, identity, CODE, "improved", NOTES, "20261115", 3)
+            self.assertEqual(archive.load_problem(self.root, saved.parent)["url"], url)
+            self.assertEqual(saved.name, "20261115.py")
+
+        decorated_url = first_url + "&utm_source=fixture#2"
+        again = archive.resolve_problem(self.root, "hack2hire", decorated_url)
+        self.assertEqual((again["key"], again["url"]), (first["key"], first["url"]))
+
     def test_high_difficulty_independent_practice_is_still_a_review_candidate(self):
         self.save("independent", difficulty=5)
         text = report.report(self.root)
@@ -224,11 +240,11 @@ class ArchiveTests(unittest.TestCase):
         folder.mkdir(parents=True)
         code = folder / "20261029.py"
         original = "# Practice: independent\n" + CODE
-        code.write_text(original)
+        code.write_text(original, encoding="utf-8")
         text = report.report(self.root)
         self.assertIn("unrated (legacy)", text)
         self.assertIn("No personally easiest candidates", text)
-        self.assertEqual(code.read_text(), original)
+        self.assertEqual(code.read_text(encoding="utf-8"), original)
 
     def test_report_uses_latest_practice_not_historical_failure(self):
         self.save("learned")
@@ -244,7 +260,7 @@ class ArchiveTests(unittest.TestCase):
             self.assertEqual(command[command.index("--sandbox") + 1], "read-only")
             self.assertNotEqual(kwargs["cwd"], str(self.root))
             self.assertIn("source_statement", kwargs["input"])
-            Path(command[command.index("--output-last-message") + 1]).write_text(json.dumps(SUMMARY))
+            Path(command[command.index("--output-last-message") + 1]).write_text(json.dumps(SUMMARY), encoding="utf-8")
             return subprocess.CompletedProcess(command, 0, "", "")
         with patch.object(archive, "find_codex", return_value="codex"), \
                 patch.object(archive.subprocess, "run", side_effect=fake_run):
@@ -261,7 +277,7 @@ class ArchiveTests(unittest.TestCase):
     def test_cli_is_found_in_app_bundle_when_terminal_path_omits_it(self):
         bundled = self.root / "My Apps/ChatGPT.app/Contents/MacOS/codex"
         bundled.parent.mkdir(parents=True)
-        bundled.write_text("#!/bin/sh\nexit 0\n")
+        bundled.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
         bundled.chmod(0o755)
         with patch.dict(os.environ, {"PRACTICE_CODEX": ""}), \
                 patch.object(archive.shutil, "which", return_value=None), \
@@ -269,8 +285,9 @@ class ArchiveTests(unittest.TestCase):
             self.assertEqual(archive.find_codex(), str(bundled))
 
     def test_explicit_cli_override_is_respected(self):
-        cli = self.root / "custom-codex"
-        cli.write_text("#!/bin/sh\nexit 0\n")
+        # Windows only treats files with a PATHEXT extension as executable.
+        cli = self.root / ("custom-codex.cmd" if os.name == "nt" else "custom-codex")
+        cli.write_text("#!/bin/sh\nexit 0\n", encoding="utf-8")
         cli.chmod(0o755)
         with patch.dict(os.environ, {"PRACTICE_CODEX": str(cli)}):
             self.assertEqual(archive.find_codex(), str(cli))
@@ -289,11 +306,11 @@ class ArchiveTests(unittest.TestCase):
 
     def test_bad_model_output_does_not_touch_notes(self):
         code = self.save()
-        before = (code.parent / "README.md").read_text()
+        before = (code.parent / "README.md").read_text(encoding="utf-8")
         with patch.object(archive, "generate_summary", side_effect=archive.ArchiveError("bad JSON")):
             with self.assertRaises(archive.ArchiveError):
                 archive.update_summary(code, self.problem, self.problem, CODE, NOTES, "fake", 1)
-        self.assertEqual((code.parent / "README.md").read_text(), before)
+        self.assertEqual((code.parent / "README.md").read_text(encoding="utf-8"), before)
 
 
 if __name__ == "__main__":

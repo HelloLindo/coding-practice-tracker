@@ -5,6 +5,11 @@ do not expose it through port forwarding, public tunnels, or a shared server.
 Keep authentication outside the repository and review the problem text, code,
 and notes sent to your own Codex CLI before using AI generation.
 
+The update check contacts only `api.github.com` and `codeload.github.com` over
+HTTPS (TLS verification is never disabled), sends no practice data, and
+installs only files whose hashes match the release manifest. It never writes
+outside the listed tool files.
+
 For a potential vulnerability, use this repository's GitHub **Security →
 Report a vulnerability** option when available. If that option is unavailable,
 open an issue asking the maintainer for a private reporting channel without

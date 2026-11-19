@@ -1,7 +1,7 @@
 # Contributing
 
 Issues and pull requests are welcome. Describe the problem, expected behavior,
-macOS/Python version, and minimal reproduction. Use synthetic code and notes;
+OS/Python version, and minimal reproduction. Use synthetic code and notes;
 remove personal data, credentials, private URLs, and restricted source content.
 
 Keep Python standard-library-only and preserve the file-based journal format.
@@ -13,8 +13,13 @@ Run the existing checks before sending a pull request:
 
 ```bash
 python3 -m unittest discover -s tests -v
+python3 scripts/release.py --check
 git diff --check
 ```
+
+If you change a shipped file, run `python3 scripts/release.py` so the update
+manifest matches. The updater must never write `problems/`, `plans/`,
+`STYLE.md`, `.cache/` or `.git/`, and must keep tool files users changed.
 
 Add focused regression coverage for behavior changes. All test archives belong
 in temporary directories, never the shipped `problems/` directory. CI uses
