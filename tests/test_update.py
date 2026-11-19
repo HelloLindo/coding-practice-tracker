@@ -63,7 +63,7 @@ class FakeGitHub:
 
 
 class Workspace(unittest.TestCase):
-    V1 = {"scripts/a.py": b"a = 1\n", "scripts/b.py": b"b = 1\n", "scripts/old.py": b"old\n",
+    V1 = {"README.md": b"Readme 1\n", "scripts/a.py": b"a = 1\n", "scripts/b.py": b"b = 1\n", "scripts/old.py": b"old\n",
           "web.command": b"#!/bin/zsh\necho v1\n"}
 
     def setUp(self):
@@ -76,7 +76,7 @@ class Workspace(unittest.TestCase):
         self.write("plans/current-week.md", b"My plan\n")
         self.write("STYLE.md", b"My style\n")
         self.write(update.MANIFEST, json.dumps(manifest("1.0.0", self.V1)).encode())
-        self.v2 = {"scripts/a.py": b"a = 2\n", "scripts/b.py": b"b = 2\n", "scripts/new.py": b"new\n",
+        self.v2 = {"README.md": b"Readme 2\n", "scripts/a.py": b"a = 2\n", "scripts/b.py": b"b = 2\n", "scripts/new.py": b"new\n",
                    "web.command": b"#!/bin/zsh\necho v2\n"}
         self.v2_manifest = manifest("1.1.0", self.v2, previous={k: [v] for k, v in self.V1.items() if k in self.v2},
                                     removed={"scripts/old.py": [self.V1["scripts/old.py"]]},
@@ -138,20 +138,23 @@ class PythonVersionTests(unittest.TestCase):
 
 
 class InstallTests(Workspace):
-    def install(self, fetch):
+    def install(self, fetch, replace_modified=False):
         prepared = update.prepare(self.root, fetch=fetch)
-        return prepared, update.install(self.root, prepared["manifest"], prepared["raw"], prepared["files"])
+        return prepared, update.install(self.root, prepared["manifest"], prepared["raw"], prepared["files"],
+                                        replace_modified)
 
     def test_updates_pristine_files_and_keeps_user_files_and_edits(self):
-        self.write("scripts/b.py", b"b = 'my edit'\n")
+        self.write("README.md", b"My personal readme\n")
         prepared, result = self.install(self.github())
-        self.assertEqual(prepared["summary"]["kept"], ["scripts/b.py"])
-        self.assertEqual(result["counts"], {"add": 1, "update": 2, "delete": 1, "keep": 1})
+        self.assertEqual(prepared["summary"]["kept"], ["README.md"])
+        self.assertEqual(prepared["summary"]["conflicts"], [])
+        self.assertEqual(result["counts"], {"add": 1, "update": 3, "delete": 1, "keep": 1})
         self.assertEqual(self.read("scripts/a.py"), b"a = 2\n")
+        self.assertEqual(self.read("scripts/b.py"), b"b = 2\n")
         self.assertEqual(self.read("scripts/new.py"), b"new\n")
         self.assertFalse((self.root / "scripts/old.py").exists())
-        self.assertEqual(self.read("scripts/b.py"), b"b = 'my edit'\n")
-        self.assertEqual(self.read(".cache/update/1.1.0/scripts/b.py"), b"b = 2\n")
+        self.assertEqual(self.read("README.md"), b"My personal readme\n")
+        self.assertEqual(self.read(".cache/update/1.1.0/README.md"), b"Readme 2\n")
         self.assertEqual(self.read("problems/leetcode/0001-two-sum/20261029.py"), b"# Practice: learned\nprint(1)\n")
         self.assertEqual(self.read("plans/current-week.md"), b"My plan\n")
         self.assertEqual(self.read("STYLE.md"), b"My style\n")
@@ -161,6 +164,32 @@ class InstallTests(Workspace):
         # A second run finds nothing left to do except the kept edit.
         self.assertEqual([a["action"] for a in update.plan(self.root, self.v2_manifest, update.local_manifest(self.root))],
                          ["keep"])
+
+    def test_edited_tool_code_stops_the_update_until_replaced(self):
+        self.write("scripts/b.py", b"b = 'my edit'\n")
+        files = lambda: {p: p.read_bytes() for p in self.root.rglob("*") if p.is_file() and ".cache" not in p.parts}
+        before = files()
+        prepared = update.prepare(self.root, fetch=self.github())
+        self.assertEqual(prepared["summary"]["conflicts"], ["scripts/b.py"])
+        with self.assertRaisesRegex(update.UpdateError, "--replace-modified"):
+            update.install(self.root, prepared["manifest"], prepared["raw"], prepared["files"])
+        self.assertEqual(before, files())
+        _, result = self.install(self.github(), replace_modified=True)
+        self.assertEqual(result["replaced"], ["scripts/b.py"])
+        self.assertEqual(self.read("scripts/b.py"), b"b = 2\n")
+        self.assertEqual(self.read(".cache/update/1.1.0/yours/scripts/b.py"), b"b = 'my edit'\n")
+        self.assertEqual(update.current_version(self.root), "1.1.0")
+
+    def test_command_line_refuses_code_conflicts_without_flag(self):
+        self.write("web.command", b"#!/bin/zsh\necho mine\n")
+        output = io.StringIO()
+        with redirect_stdout(output):
+            self.assertEqual(update.main(["--yes"], root=self.root, fetch=self.github()), 1)
+        self.assertIn("Nothing changed", output.getvalue())
+        self.assertEqual(update.current_version(self.root), "1.0.0")
+        with redirect_stdout(output):
+            self.assertEqual(update.main(["--yes", "--replace-modified"], root=self.root, fetch=self.github()), 0)
+        self.assertEqual(self.read("web.command"), b"#!/bin/zsh\necho v2\n")
 
     def test_locally_modified_file_removed_upstream_is_kept(self):
         self.write("scripts/old.py", b"I changed this\n")
@@ -174,7 +203,8 @@ class InstallTests(Workspace):
         self.assertIsNone(update.current_version(self.root))
         self.assertEqual(update.repository_of(self.root), update.DEFAULT_REPOSITORY)
         actions = {a["path"]: a["action"] for a in update.plan(self.root, self.v2_manifest)}
-        self.assertEqual(actions, {"scripts/a.py": "update", "scripts/b.py": "keep", "scripts/new.py": "add",
+        self.assertEqual(actions, {"README.md": "update", "scripts/a.py": "update", "scripts/b.py": "keep",
+                                   "scripts/new.py": "add",
                                    "scripts/old.py": "delete", "web.command": "update"})
 
     def test_crlf_checkout_counts_as_unmodified(self):
@@ -263,6 +293,15 @@ class WebUpdateTests(Workspace):
         self.app.restart = lambda: restarted.append(True)
         self.assertTrue(self.app.request_restart()["restarting"])
 
+    def test_install_reports_code_conflicts(self):
+        self.write("scripts/a.py", b"a = 'mine'\n")
+        self.app.check_updates()
+        with self.assertRaises(web_app.WebError) as raised:
+            self.app.install_update()
+        self.assertEqual(raised.exception.status, 409)
+        self.assertIn("--replace-modified", str(raised.exception))
+        self.assertEqual(update.current_version(self.root), "1.0.0")
+
     def test_install_waits_for_active_archives(self):
         self.app.check_updates()
         self.app.jobs["busy"] = {"id": "busy", "state": "generating", "fingerprint": ""}
@@ -301,6 +340,20 @@ class ReleaseTests(unittest.TestCase):
         with redirect_stdout(io.StringIO()):
             self.assertEqual(release.main(list(args), root=self.root), 0)
         return json.loads((self.root / update.MANIFEST).read_text(encoding="utf-8"))
+
+    def test_check_only_applies_to_the_upstream_repository(self):
+        from unittest.mock import patch
+        self.build("--version", "0.1.0")
+        (self.root / "scripts/a.py").write_text("changed\n", encoding="utf-8")
+        with patch.dict(os.environ, {"GITHUB_REPOSITORY": ""}), redirect_stdout(io.StringIO()):
+            self.assertEqual(release.main(["--check"], root=self.root), 1)
+            self.git("remote", "add", "origin", "git@github.com:someone/my-coding-practice.git")
+            self.assertEqual(release.main(["--check"], root=self.root), 0)
+            self.git("remote", "set-url", "origin", "https://github.com/HelloLindo/coding-practice-tracker.git")
+            self.assertEqual(release.main(["--check"], root=self.root), 1)
+        with patch.dict(os.environ, {"GITHUB_REPOSITORY": "someone/my-coding-practice"}), \
+                redirect_stdout(io.StringIO()):
+            self.assertEqual(release.main(["--check"], root=self.root), 0)
 
     def test_versions_keep_previous_hashes_and_removed_files(self):
         first = self.build("--version", "0.1.0")

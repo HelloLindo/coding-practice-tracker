@@ -102,7 +102,8 @@ LeetCode 文件夹形如 `0001-two-sum`，其他平台为 `<标题-slug>-<hash>`
 
 - 从本项目的 GitHub 仓库下载对应版本，并按清单校验每个文件；
 - 只替换 `tracker-manifest.json` 中列出的工具文件，`problems/`、`plans/`、`STYLE.md`、`settings.json`、`.cache/`、`.git/` 永远不会被改动；
-- 你自己改过的工具文件会保留，新版本的对应文件放在 `.cache/update/` 供对比；
+- 你自己改过的文档（如 README、AGENTS.md）会保留，新版本的对应文件放在 `.cache/update/` 供对比；
+- 如果你改过工具代码（`scripts/`、`web/`、`tests/`、启动脚本），更新会先停下，避免新旧版本混用导致工具出错；运行 `python3 scripts/update.py --replace-modified` 会把你的版本备份到 `.cache/update/`，再安装新版本；
 - 不会 commit 或 push。请用 `git status` 检查后自行提交。
 
 安装完成后点击 **Restart now**，页面会以新版本重新加载。如果新版本改变了记录的存储方式，页面会提供 **Upgrade records**，并在写入前列出所有改动。

@@ -42,6 +42,8 @@ REPOSITORY_RE = re.compile(r"[A-Za-z0-9](?:[A-Za-z0-9-]{0,38})/[A-Za-z0-9._-]{1,
 VERSION_RE = re.compile(r"v?(\d{1,4})\.(\d{1,4})\.(\d{1,4})")
 HASH_RE = re.compile(r"[0-9a-f]{64}")
 MAX_DOWNLOAD = 50 * 1000 * 1000
+CODE_DIRS = ("scripts/", "web/", "tests/")
+CODE_SUFFIXES = (".py", ".js", ".html", ".css", ".cmd", ".command")
 
 
 class UpdateError(Exception):
@@ -322,11 +324,29 @@ def plan(root, new, old=None):
     return actions
 
 
+def is_code(name):
+    """Files the tool runs. Keeping an edited one beside updated ones can mix versions."""
+    return name.startswith(CODE_DIRS) or name.endswith(CODE_SUFFIXES)
+
+
+def conflicts(actions):
+    return [a["path"] for a in actions
+            if a["action"] == "keep" and not a["removed_upstream"] and is_code(a["path"])]
+
+
 def summarize(actions):
     counts = {"add": 0, "update": 0, "delete": 0, "keep": 0}
     for item in actions:
         counts[item["action"]] += 1
-    return {"counts": counts, "kept": [a["path"] for a in actions if a["action"] == "keep"]}
+    return {"counts": counts, "kept": [a["path"] for a in actions if a["action"] == "keep"],
+            "conflicts": conflicts(actions)}
+
+
+def conflict_message(names):
+    return ("You changed {} tool code file(s): {}. Keeping them beside updated files could break the tool. "
+            "Run `python3 scripts/update.py --replace-modified` to back up your versions under "
+            ".cache/update/ and install the release versions, or undo those changes first."
+            .format(len(names), ", ".join(names)))
 
 
 # --- Writing -------------------------------------------------------------------
@@ -391,18 +411,30 @@ def _remove_empty_parents(root, path):
         parent = parent.parent
 
 
-def install(root, new, raw, files):
-    """Apply a release under the archive lock and return what happened."""
+def install(root, new, raw, files, replace_modified=False):
+    """Apply a release under the archive lock and return what happened.
+
+    Edited tool code files stop the update unless replace_modified is set; then
+    the user's versions are backed up under .cache/update/<version>/yours/.
+    Other edited files (README, AGENTS.md, docs) are kept as they are.
+    """
     root = Path(root)
     with _lock(root):
         old = local_manifest(root)
         actions = plan(root, new, old)
+        replaced = conflicts(actions)
+        if replaced and not replace_modified:
+            raise UpdateError(conflict_message(replaced))
         stash = root / ".cache" / "update" / new["version"]
         for item in actions:
             name, action = item["path"], item["action"]
             target = root / name
             entry = new["files"].get(name, {})
-            if action in ("add", "update"):
+            if name in replaced:
+                atomic_write_bytes(stash / "yours" / name, target.read_bytes())
+                atomic_write_bytes(target, files[name], entry.get("executable", False))
+                item["action"] = "update"
+            elif action in ("add", "update"):
                 atomic_write_bytes(target, files[name], entry.get("executable", False))
             elif action == "delete":
                 target.unlink()
@@ -416,8 +448,8 @@ def install(root, new, raw, files):
         except OSError:
             pass
     result = summarize(actions)
-    result.update(version=new["version"], previous=old["version"] if old else None,
-                  stash=(stash.relative_to(root).as_posix() if result["kept"] else None))
+    result.update(version=new["version"], previous=old["version"] if old else None, replaced=replaced,
+                  stash=(stash.relative_to(root).as_posix() if result["kept"] or replaced else None))
     return result
 
 
@@ -448,9 +480,13 @@ def prepare(root, release=None, fetch=curl):
 def describe(summary):
     c = summary["counts"]
     lines = ["  {} updated, {} added, {} removed".format(c["update"], c["add"], c["delete"])]
-    if summary["kept"]:
+    kept = [name for name in summary["kept"] if name not in summary.get("conflicts", [])]
+    if kept:
         lines.append("  Kept because you changed them (the release copy goes to .cache/update/):")
-        lines.extend("    " + name for name in summary["kept"])
+        lines.extend("    " + name for name in kept)
+    if summary.get("conflicts"):
+        lines.append("  Tool code you changed (needs --replace-modified; your versions are backed up):")
+        lines.extend("    " + name for name in summary["conflicts"])
     return "\n".join(lines)
 
 
@@ -458,6 +494,8 @@ def main(argv=None, root=None, fetch=curl):
     parser = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     parser.add_argument("--check", action="store_true", help="Only report whether an update exists")
     parser.add_argument("--yes", action="store_true", help="Install without asking")
+    parser.add_argument("--replace-modified", action="store_true",
+                        help="Back up tool code files you changed and install the release versions")
     parser.add_argument("--root", type=Path, help=argparse.SUPPRESS)
     args = parser.parse_args(argv)
     root = Path(root or args.root or ROOT).resolve()
@@ -477,6 +515,9 @@ def main(argv=None, root=None, fetch=curl):
         return 0
     prepared = prepare(root, latest, fetch)
     print(describe(prepared["summary"]))
+    if prepared["summary"]["conflicts"] and not args.replace_modified:
+        print("\nNothing changed. " + conflict_message(prepared["summary"]["conflicts"]))
+        return 1
     if not args.yes:
         if not sys.stdin.isatty():
             print("Re-run with --yes to install.")
@@ -484,9 +525,11 @@ def main(argv=None, root=None, fetch=curl):
         if input("Install {}? [y/N] ".format(latest["version"])).strip().lower() not in ("y", "yes"):
             print("Nothing changed.")
             return 0
-    result = install(root, prepared["manifest"], prepared["raw"], prepared["files"])
+    result = install(root, prepared["manifest"], prepared["raw"], prepared["files"], args.replace_modified)
     print("Installed {}.".format(result["version"]))
-    if result["stash"]:
+    if result["replaced"]:
+        print("Your previous versions of {} are in {}/yours/.".format(", ".join(result["replaced"]), result["stash"]))
+    if result["stash"] and len(result["kept"]):
         print("Compare your kept files with the copies in {}.".format(result["stash"]))
     migrate = root / "scripts" / "migrate.py"
     if migrate.is_file():

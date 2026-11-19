@@ -102,7 +102,8 @@ When `web.command` starts, it asks GitHub at most once a day whether this projec
 
 - downloads the release from this GitHub repository and checks every file against its manifest;
 - replaces only the tool files listed in `tracker-manifest.json`, so `problems/`, `plans/`, `STYLE.md`, `settings.json`, `.cache/`, and `.git/` are never touched;
-- keeps any tool file you edited yourself, and saves the release's version under `.cache/update/` so you can compare them;
+- keeps documents you edited yourself (such as README or AGENTS.md), and saves the release's version under `.cache/update/` so you can compare them;
+- stops if you edited tool code (`scripts/`, `web/`, `tests/`, launchers), because mixing versions could break the tool; `python3 scripts/update.py --replace-modified` backs up your versions under `.cache/update/` and installs the release's;
 - never commits or pushes. Review the result with `git status` and commit it yourself.
 
 After installing, select **Restart now**, and the page reloads with the new version. If a release changes how records are stored, the page offers **Upgrade records** and lists what will change before anything is written.

@@ -208,9 +208,13 @@ same lock the archiver uses:
 
 - adds new tool files and replaces tool files that match a released version;
 - removes files the release dropped, but only if you did not change them;
-- keeps tool files you changed (for example a personalised README or
+- keeps documents you changed (for example a personalised README or
   AGENTS.md) and writes the release copy to `.cache/update/<version>/` for
   comparison;
+- stops before writing anything if you changed tool code (`scripts/`, `web/`,
+  `tests/`, or a launcher), since an edited module beside updated ones can
+  break the tool. `python3 scripts/update.py --replace-modified` copies your
+  versions to `.cache/update/<version>/yours/` and installs the release's;
 - never writes `problems/`, `plans/`, `STYLE.md`, `settings.json`, `.cache/`
   (except its own cache) or `.git/`, whatever a manifest lists;
 - never commits, pushes, or runs Git.

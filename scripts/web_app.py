@@ -280,6 +280,8 @@ class PracticeApp:
                 if not info["available"]:
                     raise WebError("No newer release is available.", 409)
                 prepared = update.prepare(self.root, info["latest"], self.fetch)
+                if prepared["summary"]["conflicts"]:
+                    raise WebError(update.conflict_message(prepared["summary"]["conflicts"]), 409)
                 self.installed = update.install(self.root, prepared["manifest"], prepared["raw"],
                                                 prepared["files"])
             except update.UpdateError as exc:

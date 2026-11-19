@@ -86,6 +86,24 @@ def build(root, old, version=None, previous_ref=None):
             "files": files, "removed": dict(sorted(removed.items()))}
 
 
+def is_upstream(root, repository):
+    """True in the tool's own repository; False in a user's workspace copy.
+
+    A copy's manifest describes the release it installed, and its README or
+    AGENTS.md may be personal, so comparing it with the files is meaningless.
+    """
+    repository = repository.lower()
+    if os.environ.get("GITHUB_REPOSITORY"):
+        return os.environ["GITHUB_REPOSITORY"].lower() == repository
+    result = subprocess.run(["git", "remote", "get-url", "origin"], cwd=str(root), capture_output=True,
+                            text=True, encoding="utf-8")
+    if result.returncode:
+        return True  # A checkout without an origin is a fresh development copy.
+    url = result.stdout.strip().lower().rstrip("/")
+    url = url[:-4] if url.endswith(".git") else url
+    return url.endswith("/" + repository) or url.endswith(":" + repository)
+
+
 def render(manifest):
     return json.dumps(manifest, indent=2, sort_keys=True) + "\n"
 
@@ -102,6 +120,11 @@ def main(argv=None, root=None):
     text = render(build(root, old, args.version, args.previous_ref))
     current = path.read_text(encoding="utf-8") if path.exists() else ""
     if args.check:
+        repository = (old or {}).get("repository", DEFAULT_REPOSITORY)
+        if not is_upstream(root, repository):
+            print("Skipped: this is a workspace copy; {} describes the installed {} release.".format(
+                MANIFEST, repository))
+            return 0
         if text != current:
             print("{} is out of date. Run: python3 scripts/release.py".format(MANIFEST), file=sys.stderr)
             return 1
