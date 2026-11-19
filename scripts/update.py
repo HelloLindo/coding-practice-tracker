@@ -360,7 +360,7 @@ def _lock(root):
             yield
         return
     path.parent.mkdir(parents=True, exist_ok=True)
-    with open(str(path), "a+") as handle:
+    with open(str(path), "a+", encoding="utf-8") as handle:
         if os.name == "nt":
             import msvcrt
             handle.seek(0)

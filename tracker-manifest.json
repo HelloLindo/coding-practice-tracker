@@ -113,16 +113,18 @@
       "executable": true,
       "previous": [
         "a1eab18649131e83b698ca0329be336ad93de2256a3047099f64d8964e895fb8",
+        "af6775698c9479bce5003ff9c141ab72106679e03e9c37e6c0bcb25d1af0b836",
         "c4b5630ef4797300c2a220f35c6bb4891403fc75b69f026739770de6ef2b6acf"
       ],
-      "sha256": "af6775698c9479bce5003ff9c141ab72106679e03e9c37e6c0bcb25d1af0b836"
+      "sha256": "4ab5da1a5a45bec413706c997ab84d3807ed9b3522345d72b5cc6b3df5d0e0de"
     },
     "scripts/common.py": {
       "executable": false,
       "previous": [
-        "709490acb33af60d0bc02fc97b6cf0c5ece72f1bcafe044ee1eb4b0509db81e3"
+        "709490acb33af60d0bc02fc97b6cf0c5ece72f1bcafe044ee1eb4b0509db81e3",
+        "b3d1a5644277be383cd7303c0dba62ba704f18dccef3f386b78ae078a15ab383"
       ],
-      "sha256": "b3d1a5644277be383cd7303c0dba62ba704f18dccef3f386b78ae078a15ab383"
+      "sha256": "ebdafcb2ff250058eaeb327f51c491a205def9fb98278478d6597d898cd02edf"
     },
     "scripts/migrate.py": {
       "executable": false,
@@ -179,10 +181,11 @@
     "scripts/update.py": {
       "executable": false,
       "previous": [
+        "3fc93e61d4b7b7177784ac5489ec247b9fe181706df355b4f69fecb241728b4f",
         "5646353c741a6dcd4b46ce4bd43acd26afebe138666dca277f10fb87413af620",
         "e106a99dc476b406272fdbd0e3802ac4a9e086555e9494807bc7d70ddbbfe04c"
       ],
-      "sha256": "3fc93e61d4b7b7177784ac5489ec247b9fe181706df355b4f69fecb241728b4f"
+      "sha256": "675491314af354b0e631b7495d906eaee40b131a5ae5211331298e1b0c823b51"
     },
     "scripts/web_app.py": {
       "executable": false,
@@ -195,29 +198,36 @@
     "tests/test_archive.py": {
       "executable": false,
       "previous": [
-        "b00c77da31cb69b7f1946095458e50ae16c6815611fbb60fe70b415ab505690d"
+        "1a4d233c9a4626f1fdf647ef3d2b1857df122cba8cde92fab3778472c75ed289",
+        "b00c77da31cb69b7f1946095458e50ae16c6815611fbb60fe70b415ab505690d",
+        "d28835c508ddc5f8053beae9d66b6f6aba1658a759387775e05905763bd65193"
       ],
-      "sha256": "d28835c508ddc5f8053beae9d66b6f6aba1658a759387775e05905763bd65193"
+      "sha256": "94c245580b456d270a04eca4ce5b9b62a468b3aa52a9ff509c20adb9a0a84d42"
     },
     "tests/test_platforms.py": {
       "executable": false,
-      "previous": [],
-      "sha256": "720dfea54f8d3da2aae1011cbc8806f2e5ee531bc6c894ad70446ff28e1ec776"
+      "previous": [
+        "720dfea54f8d3da2aae1011cbc8806f2e5ee531bc6c894ad70446ff28e1ec776"
+      ],
+      "sha256": "158bc4b653b11399b7386979d807a55964eb699ee064b24ec4efa36e999ba29a"
     },
     "tests/test_update.py": {
       "executable": false,
       "previous": [
+        "3f25be8e9a0db7ab46d51c2b7516bb4b1470112f763c7214eae94811a5dea5cb",
         "65887cb9c2a0ee58595f7c41b14fa9612ef0ee586a8c640ad33b77e9728cc50f",
         "9a531ff69ebe148b31bac2d00e5a906ece0cf52b0143c0e303ae3af9d5b1b8cc"
       ],
-      "sha256": "3f25be8e9a0db7ab46d51c2b7516bb4b1470112f763c7214eae94811a5dea5cb"
+      "sha256": "da1794c1c3f0a3f1207051bf75e0bc76cbb9dadc1db0153ec86651486f7df6ae"
     },
     "tests/test_web.py": {
       "executable": false,
       "previous": [
-        "b84568796d37c9caf7e909e0f5d266c20dd83c7f6d447a281e053e18b485f828"
+        "466cfaa2125cb162048b08a62a7041c67e1a08930f273abd96303d68351a5960",
+        "b84568796d37c9caf7e909e0f5d266c20dd83c7f6d447a281e053e18b485f828",
+        "e1abfb3a831e239d4af6602d7cb9608475259888181f3ee5d6feb9216b813e93"
       ],
-      "sha256": "e1abfb3a831e239d4af6602d7cb9608475259888181f3ee5d6feb9216b813e93"
+      "sha256": "467d907e70b38e991138bf6815b26544a7c18775827d6a186c26931af2adea96"
     },
     "web.cmd": {
       "executable": false,

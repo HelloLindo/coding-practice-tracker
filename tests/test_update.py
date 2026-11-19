@@ -291,7 +291,7 @@ class ReleaseTests(unittest.TestCase):
                            "plans/p.md": "plan\n", "STYLE.md": "style\n"}.items():
             path = self.root / name
             path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(text)
+            path.write_text(text, encoding="utf-8")
         self.git("add", "-A")
 
     def git(self, *args):
@@ -300,12 +300,12 @@ class ReleaseTests(unittest.TestCase):
     def build(self, *args):
         with redirect_stdout(io.StringIO()):
             self.assertEqual(release.main(list(args), root=self.root), 0)
-        return json.loads((self.root / update.MANIFEST).read_text())
+        return json.loads((self.root / update.MANIFEST).read_text(encoding="utf-8"))
 
     def test_versions_keep_previous_hashes_and_removed_files(self):
         first = self.build("--version", "0.1.0")
         self.assertEqual(sorted(first["files"]), ["scripts/a.py", "scripts/gone.py"])
-        (self.root / "scripts/a.py").write_text("a2\n")
+        (self.root / "scripts/a.py").write_text("a2\n", encoding="utf-8")
         (self.root / "scripts/gone.py").unlink()
         self.git("add", "-A")
         dev = self.build()
@@ -316,7 +316,7 @@ class ReleaseTests(unittest.TestCase):
         self.assertEqual(second["removed"], {"scripts/gone.py": [update.digest(b"g\n")]})
         with redirect_stdout(io.StringIO()):
             self.assertEqual(release.main(["--check"], root=self.root), 0)
-        (self.root / "scripts/a.py").write_text("a3\n")
+        (self.root / "scripts/a.py").write_text("a3\n", encoding="utf-8")
         with redirect_stdout(io.StringIO()):
             self.assertEqual(release.main(["--check"], root=self.root), 1)
 

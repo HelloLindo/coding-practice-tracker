@@ -64,12 +64,12 @@ class WebTests(WebFixture):
     def test_manual_save_changes_only_recall_and_survives_a_new_app_instance(self):
         path = self.fixture()
         readme = path.parent / "README.md"
-        before = readme.read_text()
+        before = readme.read_text(encoding="utf-8")
         digest = hashlib.sha256(path.read_bytes()).hexdigest()
         old = self.app.problem("leetcode/0001-two-sum")
         result = self.app.save_recall({"key": old["key"], "revision": old["recall"]["revision"],
                                        "zh": "- 我自己的解释。\n- 保留 `代码`。", "en": "- My own explanation.\n- Keep `code`."})
-        after = readme.read_text()
+        after = readme.read_text(encoding="utf-8")
         def without_recall(text):
             start, end = archive.marker("recall", "start"), archive.marker("recall", "end")
             a, rest = text.split(start, 1)
@@ -99,7 +99,7 @@ class WebTests(WebFixture):
         old = self.app.problem("leetcode/0001-two-sum")
         archive.save_practice(self.root, self.problem, CODE, "independent", "New original note.", "20261101", 2)
         self.app.save_recall({"key": old["key"], "revision": old["recall"]["revision"], "zh": "解释", "en": "Explanation"})
-        self.assertIn("New original note.", (code.parent / "README.md").read_text())
+        self.assertIn("New original note.", (code.parent / "README.md").read_text(encoding="utf-8"))
 
     def test_manual_save_rejects_empty_languages_and_reserved_markers(self):
         self.fixture()
@@ -127,7 +127,7 @@ class WebTests(WebFixture):
         saved = self.app.problem(result["key"])
         self.assertEqual(saved["difficulty"], 4)
         self.assertIn(SUMMARY["quick_recall"]["zh"][0], saved["recall"]["zh"])
-        self.assertIn(NOTES, (self.app.folder(result["key"]) / "README.md").read_text())
+        self.assertIn(NOTES, (self.app.folder(result["key"]) / "README.md").read_text(encoding="utf-8"))
 
     def test_hack2hire_title_is_saved_and_used_in_detail_and_sidebar(self):
         url = "https://www.hack2hire.com/question-bank/coding-questions/example/practice"
@@ -140,7 +140,7 @@ class WebTests(WebFixture):
         key = result["key"]
         self.assertEqual(generate.call_args.args[0]["title"], "Find the Nearest City")
         readme = self.app.folder(key) / "README.md"
-        self.assertTrue(readme.read_text().startswith("# Find the Nearest City\n"))
+        self.assertTrue(readme.read_text(encoding="utf-8").startswith("# Find the Nearest City\n"))
         self.assertEqual(self.app.listing("Find the Nearest City")[0]["key"], key)
         self.assertEqual(self.app.problem(key)["title"], "Find the Nearest City")
 
@@ -169,7 +169,7 @@ class WebTests(WebFixture):
             result = self.wait_job(job["id"])
         self.assertEqual(result["state"], "partial")
         saved = self.app.problem(result["key"])
-        self.assertIn(NOTES, (self.app.folder(result["key"]) / "README.md").read_text())
+        self.assertIn(NOTES, (self.app.folder(result["key"]) / "README.md").read_text(encoding="utf-8"))
         changed = self.app.save_recall({"key": result["key"], "revision": saved["recall"]["revision"], "zh": "手写速记", "en": "Manual recall"})
         self.assertEqual(changed["recall"]["en"], "Manual recall")
 
@@ -187,8 +187,8 @@ class WebTests(WebFixture):
         self.assertIn(SUMMARY["problem_summary"], self.app.problem(key)["statement"])
         readme = path.parent / "README.md"
         statement = "Full source statement.\n\n```text\nInput: [1, 2]\n```"
-        readme.write_text(readme.read_text() + "\n" + archive.marker("statement", "start")
-                          + "\n" + statement + "\n" + archive.marker("statement", "end") + "\n")
+        readme.write_text(readme.read_text(encoding="utf-8") + "\n" + archive.marker("statement", "start")
+                          + "\n" + statement + "\n" + archive.marker("statement", "end") + "\n", encoding="utf-8")
         self.assertEqual(self.app.problem(key)["statement"], statement)
 
         with patch.object(archive, "generate_summary", return_value=SUMMARY) as generate:
@@ -220,8 +220,8 @@ class WebTests(WebFixture):
     def test_legacy_english_recall_remains_editable(self):
         path = self.fixture()
         readme = path.parent / "README.md"
-        text = archive.replace_block(readme.read_text(), "recall", "AI-generated from an older solution.\n\n- English-only legacy recall.")
-        readme.write_text(text)
+        text = archive.replace_block(readme.read_text(encoding="utf-8"), "recall", "AI-generated from an older solution.\n\n- English-only legacy recall.")
+        readme.write_text(text, encoding="utf-8")
         data = self.app.problem("leetcode/0001-two-sum")
         self.assertEqual(data["recall"]["zh"], "")
         self.assertIn("English-only", data["recall"]["en"])
@@ -283,7 +283,7 @@ class WebTests(WebFixture):
         self.assertEqual(result["title"], "Two Sum (renamed)")
         self.assertEqual(result["companies"], ["Amazon"])
         self.assertEqual([r["key"] for r in result["related"]], [other_key])
-        self.assertTrue((self.app.folder(old["key"]) / "README.md").read_text().startswith("# 0001. Two Sum (renamed)\n"))
+        self.assertTrue((self.app.folder(old["key"]) / "README.md").read_text(encoding="utf-8").startswith("# 0001. Two Sum (renamed)\n"))
         self.assertEqual([r["key"] for r in self.app.problem(other_key)["related"]], [old["key"]])
         with self.assertRaises(web_app.WebError) as error:
             self.app.save_meta({"key": old["key"], "revision": old["meta_revision"], "title": "Stale"})
@@ -298,7 +298,7 @@ class WebTests(WebFixture):
         saved = self.app.save_statement({"key": old["key"], "revision": old["statement_revision"],
                                          "statement": "Full **statement**."})
         self.assertEqual(saved["full_statement"], "Full **statement**.")
-        self.assertIn("Full **statement**.", (path.parent / "README.md").read_text())
+        self.assertIn("Full **statement**.", (path.parent / "README.md").read_text(encoding="utf-8"))
         with self.assertRaises(web_app.WebError) as error:
             self.app.save_statement({"key": old["key"], "revision": old["statement_revision"], "statement": "x"})
         self.assertEqual(error.exception.status, 409)
@@ -312,7 +312,7 @@ class WebTests(WebFixture):
             job = self.app.submit({"request_id": "regen-statement", "key": "leetcode/0001-two-sum",
                                    "statement": "Pasted statement."}, "generate")
             self.assertEqual(self.wait_job(job["id"])["state"], "ready")
-        self.assertEqual(archive.block_content((path.parent / "README.md").read_text(), "statement"), "Pasted statement.")
+        self.assertEqual(archive.block_content((path.parent / "README.md").read_text(encoding="utf-8"), "statement"), "Pasted statement.")
 
     def test_report_lists_review_candidates_with_titles(self):
         self.fixture()

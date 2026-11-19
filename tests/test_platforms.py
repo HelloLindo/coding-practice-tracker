@@ -61,11 +61,11 @@ class PlatformTests(unittest.TestCase):
         problem = archive.resolve_problem(self.root, "hack2hire", H2H, title="Find the Nearest City")
         statement = "# Find the Nearest City\n\n- $1 \\le n \\le 10^4$\n"
         path = self.save(problem, title="Find the Nearest City", statement=statement, companies=["Databricks"])
-        meta = json.loads((path.parent / "problem.json").read_text())
+        meta = json.loads((path.parent / "problem.json").read_text(encoding="utf-8"))
         self.assertEqual(meta["title"], "Find the Nearest City")
         self.assertEqual(meta["companies"], ["DoorDash", "Databricks"])
         self.assertEqual(meta["created"], "2026-11-15")
-        readme = (path.parent / "README.md").read_text()
+        readme = (path.parent / "README.md").read_text(encoding="utf-8")
         self.assertEqual(records.block_content(readme, "statement"), statement.strip())
         self.assertEqual(archive.source_for(self.root, problem)["statement"], statement.strip())
         # The same URL with tracking noise reuses the folder; a new title renames it in place.
@@ -74,7 +74,7 @@ class PlatformTests(unittest.TestCase):
         second = self.save(again, title="Nearest City", date="20261116")
         self.assertEqual(second.parent, path.parent)
         self.assertEqual(records.load_problem(self.root, path.parent)["title"], "Nearest City")
-        self.assertTrue((path.parent / "README.md").read_text().startswith("# Nearest City\n"))
+        self.assertTrue((path.parent / "README.md").read_text(encoding="utf-8").startswith("# Nearest City\n"))
 
     def test_statement_markers_are_rejected_before_anything_is_saved(self):
         problem = archive.resolve_problem(self.root, "manual", "", title="Design a Rate Limiter")
@@ -88,7 +88,7 @@ class PlatformTests(unittest.TestCase):
         path = self.save(first)
         again = archive.resolve_problem(self.root, "manual", "", title="  design a RATE limiter ")
         self.assertEqual(again["key"], first["key"])
-        self.assertIn("Source: none (manual entry)", (path.parent / "README.md").read_text())
+        self.assertIn("Source: none (manual entry)", (path.parent / "README.md").read_text(encoding="utf-8"))
         with self.assertRaises(common.ArchiveError):
             archive.resolve_problem(self.root, "manual", "", title="")
 
@@ -143,12 +143,12 @@ class MigrationTests(unittest.TestCase):
             problem["id"] = str(int(problem["id"]))
         readme = records.initial_readme(problem)
         readme = records.replace_block(readme, "recall", "AI-generated.\n\nPatterns: two pointers, array\n\n### 中文\n\n- 中\n\n### English\n\n- En")
-        (folder / "README.md").write_text(readme + "\n### 2026-11-15 · learned\n\nCode: [20261115.py](20261115.py)\n\nMy notes:\n\nKeep me.\n")
-        (folder / "20261115.py").write_text("# Practice: learned\n# Difficulty: 3\n" + CODE)
+        (folder / "README.md").write_text(readme + "\n### 2026-11-15 · learned\n\nCode: [20261115.py](20261115.py)\n\nMy notes:\n\nKeep me.\n", encoding="utf-8")
+        (folder / "20261115.py").write_text("# Practice: learned\n# Difficulty: 3\n" + CODE, encoding="utf-8")
         if statement:
             cache = self.root / ".cache/sources" / platform / (key + ".json")
             cache.parent.mkdir(parents=True, exist_ok=True)
-            cache.write_text(json.dumps({"statement": statement, "provenance": migrate.USER_SUPPLIED}))
+            cache.write_text(json.dumps({"statement": statement, "provenance": migrate.USER_SUPPLIED}), encoding="utf-8")
         return folder
 
     def run_migrate(self, *args):
@@ -172,15 +172,15 @@ class MigrationTests(unittest.TestCase):
         self.assertTrue(new.is_dir())
         self.assertFalse(h2h.exists())
         self.assertFalse(part2.exists())
-        meta = json.loads((new / "problem.json").read_text())
+        meta = json.loads((new / "problem.json").read_text(encoding="utf-8"))
         self.assertEqual(meta["companies"], ["DoorDash"])
         self.assertEqual(meta["tags"], ["two pointers", "array"])
         self.assertEqual(len(meta["related"]), 1)
         self.assertTrue(meta["related"][0].startswith("hack2hire/dasher-payment-model-part-2-"))
-        readme = (new / "README.md").read_text()
+        readme = (new / "README.md").read_text(encoding="utf-8")
         self.assertEqual(records.block_content(readme, "statement"), "Full **statement**.")
         self.assertIn("Keep me.", readme)
-        self.assertEqual((new / "20261115.py").read_text(), "# Practice: learned\n# Difficulty: 3\n" + CODE)
+        self.assertEqual((new / "20261115.py").read_text(encoding="utf-8"), "# Practice: learned\n# Difficulty: 3\n" + CODE)
         self.assertTrue((self.root / ".cache/sources/hack2hire" / (new.name + ".json")).exists())
         self.assertTrue((leet / "problem.json").exists())
         self.assertIn("up to date", self.run_migrate())

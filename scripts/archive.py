@@ -257,7 +257,7 @@ def generate_summary(problem, source, code, notes, model, timeout):
     with tempfile.TemporaryDirectory(prefix="coding-practice-ai-") as temporary:
         work = Path(temporary)
         # Avoid inheriting unrelated resume instructions or exposing the repo to the model.
-        (work / "AGENTS.md").write_text("Only transform the supplied prompt data into JSON. Do not use tools.\n")
+        (work / "AGENTS.md").write_text("Only transform the supplied prompt data into JSON. Do not use tools.\n", encoding="utf-8")
         output = work / "summary.json"
         command = [executable, "exec", "--ephemeral", "--ignore-user-config", "--sandbox", "read-only",
                    "--skip-git-repo-check", "--color", "never", "--model", model,
