@@ -7,6 +7,7 @@ import {register, start, onRender, navigate, flash} from './router.js';
 import {newView} from './views/new.js';
 import {problemView} from './views/problem.js';
 import {reviewView} from './views/review.js';
+import {initUpdates} from './updates.js';
 
 function initTheme() {
   const apply = choice => {
@@ -55,4 +56,5 @@ function resumeJob() {
   }
   await start();
   resumeJob();
+  initUpdates();
 })();

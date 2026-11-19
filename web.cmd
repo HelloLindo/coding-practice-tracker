@@ -2,10 +2,11 @@
 rem Windows launcher for the browser workspace. Requires Python 3.9+ (python.org or Microsoft Store).
 setlocal
 cd /d "%~dp0"
-where py >/dev/null 2>nul
-if %errorlevel%==0 (
-  py -3 scripts\web_app.py %*
-) else (
-  python scripts\web_app.py %*
+rem The block is parsed at once, so an update that replaces this file cannot
+rem change the commands of a running launcher.
+(
+  where py >nul 2>nul
+  if not errorlevel 1 (py -3 scripts\web_app.py %*) else (python scripts\web_app.py %*)
+  if errorlevel 1 pause
+  exit /b
 )
-if errorlevel 1 pause

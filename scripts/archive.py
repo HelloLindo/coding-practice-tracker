@@ -390,6 +390,18 @@ def needs_summary(readme):
     return "AI summary pending." in readme or "Source summary pending." in readme
 
 
+def update_hint():
+    """Mention a newer release found by the web app's daily check (no network here)."""
+    try:
+        import update
+        info = update.cached_status(ROOT)
+    except Exception:  # noqa: BLE001  (a hint must never block archiving)
+        return
+    if info.get("available") and info.get("latest"):
+        print("Coding Practice Tracker v{} is available. Update with: python3 scripts/update.py".format(
+            info["latest"]["version"]))
+
+
 def main(argv=None):
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--platform", choices=("auto",) + providers.names(),
@@ -420,6 +432,7 @@ def main(argv=None):
             print("Line editing is unavailable in this Python. Use :paste or --code-file for easier code input.")
         terminal_heading("Coding Practice Tracker · Archive")
         print("Final AC code · practice status · personal difficulty · optional notes")
+        update_hint()
     if args.refresh:
         target = args.refresh.resolve()
         folder = target if target.is_dir() else target.parent

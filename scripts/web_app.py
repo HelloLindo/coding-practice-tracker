@@ -10,14 +10,18 @@ import os
 from pathlib import Path
 import re
 import secrets
+import subprocess
+import sys
 import threading
 from urllib.parse import parse_qs, urlparse
 import webbrowser
 
 import archive
+import migrate
 import providers
 import records
 import report
+import update
 from common import ArchiveError, clean_list, today
 
 ROOT = archive.ROOT
@@ -26,6 +30,8 @@ STATIC_TYPES = {".html": "text/html; charset=utf-8", ".js": "text/javascript; ch
                 ".css": "text/css; charset=utf-8", ".svg": "image/svg+xml", ".png": "image/png",
                 ".ico": "image/x-icon", ".woff2": "font/woff2"}
 TERMINAL = ("ready", "partial", "failed", "conflict")
+RESTART_CODE = 75  # The supervisor starts the service again after this exit status.
+LAYOUT_CHANGES = ("rename", "add problem.json", "move cached statement")
 
 
 class WebError(Exception):
@@ -72,14 +78,20 @@ def list_field(data, key):
 
 
 class PracticeApp:
-    def __init__(self, root=ROOT, model=None, timeout=120):
+    def __init__(self, root=ROOT, model=None, timeout=120, auto_check=False, fetch=update.curl):
         self.root = Path(root).resolve()
         self.model = model or os.environ.get("PRACTICE_MODEL", "gpt-6-luna")
         self.timeout = timeout
         self.token = secrets.token_urlsafe(32)
+        self.boot = secrets.token_hex(8)
         self.jobs = {}
         self.mutex = threading.Lock()
         self.pool = ThreadPoolExecutor(max_workers=2, thread_name_prefix="practice")
+        self.auto_check = auto_check
+        self.fetch = fetch
+        self.update_lock = threading.Lock()
+        self.installed = None   # Result of an update installed by this process.
+        self.restart = None     # Set by main() when a supervisor can restart the service.
 
     def close(self):
         self.pool.shutdown(wait=True)
@@ -216,6 +228,84 @@ class PracticeApp:
                 "companies": target.get("companies", []),
                 "needs_title": provider.title == "required" and not existing and not title,
                 "statement_mode": provider.statement, "has_statement": has_statement}
+
+    # --- Updates -------------------------------------------------------
+    def active_jobs(self):
+        with self.mutex:
+            return any(job["state"] not in TERMINAL for job in self.jobs.values())
+
+    def migration(self):
+        """Folders that still use the record layout from before problem.json."""
+        if self.installed:
+            return []  # The running code is older than the files; restart first.
+        try:
+            with archive.archive_lock(self.root):
+                items = migrate.plan(self.root)
+        except (ArchiveError, OSError, ValueError):
+            return []
+        pending = []
+        for item in items:
+            changes, _ = migrate.describe(item)
+            if any(change.startswith(LAYOUT_CHANGES) for change in changes):
+                pending.append({"key": item["platform"] + "/" + item["old_key"], "changes": changes})
+        return pending
+
+    def update_status(self):
+        try:
+            info = update.cached_status(self.root)
+        except update.UpdateError as exc:
+            info = {"current": None, "latest": None, "available": False, "error": str(exc)}
+        if self.installed:
+            info["available"] = False
+        info.update(auto_check=self.auto_check, can_restart=self.restart is not None,
+                    installed=self.installed, migration=self.migration())
+        return info
+
+    def check_updates(self, force=True):
+        with self.update_lock:
+            try:
+                update.check(self.root, force=force, fetch=self.fetch)
+            except update.UpdateError as exc:
+                raise WebError(str(exc))
+        return self.update_status()
+
+    def install_update(self):
+        if self.active_jobs():
+            raise WebError("Wait for the current archive to finish before updating.", 409)
+        with self.update_lock:
+            if self.installed:
+                raise WebError("An update is already installed. Restart the app to use it.", 409)
+            try:
+                info = update.check(self.root, fetch=self.fetch)
+                if not info["available"]:
+                    raise WebError("No newer release is available.", 409)
+                prepared = update.prepare(self.root, info["latest"], self.fetch)
+                self.installed = update.install(self.root, prepared["manifest"], prepared["raw"],
+                                                prepared["files"])
+            except update.UpdateError as exc:
+                raise WebError("The update was not installed: " + str(exc), 502)
+        return self.update_status()
+
+    def apply_migration(self):
+        if self.installed:
+            raise WebError("Restart the app to finish the update before upgrading records.", 409)
+        if self.active_jobs():
+            raise WebError("Wait for the current archive to finish before upgrading records.", 409)
+        with archive.archive_lock(self.root):
+            items = migrate.plan(self.root)
+            pending = sum(1 for item in items if migrate.describe(item)[0])
+            migrate.apply(self.root, items)
+        result = self.update_status()
+        result["migrated"] = pending
+        return result
+
+    def request_restart(self):
+        if self.restart is None:
+            raise WebError("Stop web.command (Ctrl-C) and start it again to use the update.", 409)
+        if self.active_jobs():
+            raise WebError("Wait for the current archive to finish before restarting.", 409)
+        threading.Timer(0.2, self.restart).start()
+        return {"restarting": True, "boot": self.boot}
 
     # --- Writing -------------------------------------------------------
     def save_recall(self, data):
@@ -492,7 +582,7 @@ class Handler(BaseHTTPRequestHandler):
             self.allowed()
             parsed = urlparse(self.path)
             if parsed.path == "/api/health":
-                self.send_body(200, {"ok": True})
+                self.send_body(200, {"ok": True, "boot": self.app.boot})
                 return
             if parsed.path == "/favicon.ico":
                 self.send_body(204, b"", "image/x-icon")
@@ -509,6 +599,7 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/job": lambda: self.app.job(query.get("id", [""])[0]),
                 "/api/platforms": self.app.platforms,
                 "/api/report": self.app.report,
+                "/api/update": self.app.update_status,
             }
             if parsed.path not in routes:
                 raise WebError("Page not found.", 404)
@@ -537,6 +628,10 @@ class Handler(BaseHTTPRequestHandler):
                 "/api/statement": (200, lambda: self.app.save_statement(data)),
                 "/api/meta": (200, lambda: self.app.save_meta(data)),
                 "/api/resolve": (200, lambda: self.app.resolve(data)),
+                "/api/update/check": (200, self.app.check_updates),
+                "/api/update/install": (200, self.app.install_update),
+                "/api/migrate": (200, self.app.apply_migration),
+                "/api/restart": (202, self.app.request_restart),
             }
             if self.path not in routes:
                 raise WebError("Page not found.", 404)
@@ -544,7 +639,7 @@ class Handler(BaseHTTPRequestHandler):
             self.send_body(status, handler())
         except WebError as exc:
             self.send_error_body(exc)
-        except (OSError, ValueError, ArchiveError) as exc:
+        except (OSError, ValueError, ArchiveError, update.UpdateError) as exc:
             self.send_body(400, {"error": str(exc)})
 
 
@@ -555,22 +650,64 @@ def make_server(app, port=8765):
     return server
 
 
+def supervise(argv):
+    """Run the service in a child process and start it again after an update."""
+    args = list(argv)
+    env = dict(os.environ, PRACTICE_SUPERVISED="1")
+    while True:
+        child = subprocess.Popen([sys.executable, str(Path(__file__).resolve()), *args], env=env)
+        while True:
+            try:
+                code = child.wait()
+                break
+            except KeyboardInterrupt:
+                continue  # The child received Ctrl-C too and finishes active archives first.
+        if code != RESTART_CODE:
+            return code
+        print("Restarting with the updated tool…", flush=True)
+        if "--no-browser" not in args:
+            args.append("--no-browser")
+
+
+def auto_check_enabled(flag):
+    value = os.environ.get("PRACTICE_NO_UPDATE_CHECK", "").strip().lower()
+    return not flag and value not in ("1", "true", "yes", "on")
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument("--no-browser", action="store_true")
+    parser.add_argument("--no-update-check", action="store_true",
+                        help="Do not check GitHub for a newer release (manual checks still work)")
     parser.add_argument("--model", default=os.environ.get("PRACTICE_MODEL", "gpt-6-luna"))
     args = parser.parse_args()
     if not 0 <= args.port <= 65535:
         parser.error("Port must be between 0 and 65535.")
-    app = PracticeApp(model=args.model)
+    supervised = os.environ.get("PRACTICE_SUPERVISED") == "1"
+    if not supervised and args.port:
+        sys.exit(supervise(sys.argv[1:]))
+    app = PracticeApp(model=args.model, auto_check=auto_check_enabled(args.no_update_check))
     try:
         server = make_server(app, args.port)
     except OSError as exc:
         parser.exit(1, "Could not start the local app: {}. Try --port 8766.\n".format(exc))
+    exit_code = [0]
+    if supervised:
+        def restart():
+            exit_code[0] = RESTART_CODE
+            server.shutdown()
+        app.restart = restart
     url = "http://127.0.0.1:{}/".format(server.server_port)
     print("Coding Practice Tracker is ready: " + url, flush=True)
     print("Keep this window open. Press Ctrl-C to stop.", flush=True)
+    if app.auto_check:
+        def background_check():
+            try:
+                app.check_updates(force=False)
+            except WebError:
+                pass  # The page shows the recorded error; nothing to do here.
+        threading.Thread(target=background_check, daemon=True).start()
     if not args.no_browser:
         webbrowser.open(url)
     try:
@@ -580,6 +717,7 @@ def main():
     finally:
         server.server_close()
         app.close()
+    sys.exit(exit_code[0])
 
 
 if __name__ == "__main__":
